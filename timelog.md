@@ -14,3 +14,4 @@ Supervisor Name: Simon Fowler
 ### 20 September 2023 
 * *3 hours* reading the guidance notes 
 * *0.5 hour* creating the repository and cloning 
+* *1.5 hours* found shh issue when trying to clone, still unresolved 
