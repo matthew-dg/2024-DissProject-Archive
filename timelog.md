@@ -16,3 +16,15 @@ Supervisor Name: Simon Fowler
 * *0.5 hour* creating the repository and cloning 
 * *1.5 hours* found shh issue when trying to clone, still unresolved 
 * *1.5 hours* installed and set up windows subsystem for linux and cloned the repository into there, also more ssh issues fixed
+
+### 21 September 2023
+* *2 hours* attened the intro lecture
+
+### 22 September 2023
+* *3 hours* installed + setup tools needed for the project(Windows Terminal, VS code for WSL,OPAM, OCAML) (except links and msyql)
+
+## Week 2
+
+### 25 September 2023
+* *2.5 hours* Managed to install links, msql but not the links-mysql library due to a error, might try a diffrent database
+
