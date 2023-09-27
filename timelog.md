@@ -28,3 +28,5 @@ Supervisor Name: Simon Fowler
 ### 25 September 2023
 * *2.5 hours* Managed to install links, msql but not the links-mysql library due to a error, might try a diffrent database
 
+### 26 September 2023
+* *3 hours* looked into postgresql and decided to use it as it seems to be the most supported, finaly got the datbase examples working! :D, Can now start seeing how to use databases in links(sending queries etc)
