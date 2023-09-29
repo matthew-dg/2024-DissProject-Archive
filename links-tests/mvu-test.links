@@ -1,0 +1,45 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+
+typename Model = (text: String, counter: Int);
+
+typename Msg = [| UpdateText:String | IncrCounter |];
+
+sig initialModel : Model
+var initialModel = (text = "", counter = 0);
+
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    open MvuHTML;
+    open MvuAttrs;
+
+    input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
+    p(a0, textNode(model.text)) +*
+    p(a0, textNode(show(model.counter))) +*
+    button(onClick(fun() { IncrCounter }), textNode("Increment"))
+
+}
+
+sig updt : (Msg, Model) ~> Model
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateText(txt) -> (model with text = txt)
+        case IncrCounter -> (model with counter = model.counter + 1)
+    }
+}
+
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+        <div id = "placeholder"></div>
+}
+
+fun main() {
+    addRoute("/", fun(_) { mainPage() });
+    servePages()
+}
+
+main()
+

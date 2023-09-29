@@ -30,3 +30,7 @@ Supervisor Name: Simon Fowler
 
 ### 26 September 2023
 * *3 hours* looked into postgresql and decided to use it as it seems to be the most supported, finaly got the datbase examples working! :D, Can now start seeing how to use databases in links(sending queries etc)
+
+### 29 September 2023
+* *0.5 hours* meeting with supervisor
+* *0.5 hours* getting to grips with the mvu 
