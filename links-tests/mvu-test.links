@@ -37,6 +37,9 @@ fun mainPage() {
 }
 
 fun main() {
+    var db = database "links";
+    var test = table "test" with (i : Int, s : String) from db;
+    insert test  values (i, s) [(i=1, s="one")];
     addRoute("/", fun(_) { mainPage() });
     servePages()
 }
