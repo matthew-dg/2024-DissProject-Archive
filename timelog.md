@@ -34,3 +34,11 @@ Supervisor Name: Simon Fowler
 ### 29 September 2023
 * *0.5 hours* meeting with supervisor
 * *0.5 hours* getting to grips with the mvu 
+
+## Week 3
+
+### 2 October 2023
+* *2 hours* attemped to try out hotcrp using docker, got installed fine but couldnt get the database to work, will try again later
+
+### 4 October 2023
+* *2 hours* got docker working!
