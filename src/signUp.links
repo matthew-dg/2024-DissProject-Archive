@@ -1,0 +1,51 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+
+typename Model = (text: String, counter: Int, homeLink: String);
+
+typename Msg = [| UpdateText:String | IncrCounter |];
+
+sig initialModel : Model
+var initialModel = (text = "", counter = 0, homeLink = "/");
+
+sig insertUser : (String, String, String) ~> ()
+fun insertUser(enteredEmail,enteredName,enteredPassword) {
+    var db = database "links";
+    var users = table "users" with (email : String, name : String, password : String) from db;
+    insert users values (email, name, password) [(email = enteredEmail, name = enteredName, password = enteredPassword)];
+    insert test  values (i, s) [(i=1, s="one")]
+}
+
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    open MvuHTML;
+    open MvuAttrs;
+    <html>
+        <form l:onsubmit="{insertUser(personEmail,personName,personPassword)}">
+            What is your email?
+            <input l:email="{personEmail}"/>
+            What is your password?
+            <input l:password="{personPassword}"/>
+            What is your name? 
+            <input l:testname="{personName}"/>
+        </form>
+    </html> +*
+    p(a0, textNode("WASSSUP")) +*
+    a(href(model.homeLink), textNode("Home"))
+    }
+
+sig updt : (Msg, Model) ~> Model
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateText(txt) -> (model with text = txt)
+        case IncrCounter -> (model with counter = model.counter + 1)
+    }
+}
+
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+        <div id = "placeholder"></div>
+}

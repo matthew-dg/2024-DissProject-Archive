@@ -1,0 +1,51 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+
+typename Model = (text: String, counter: Int, dataText: String);
+
+typename Msg = [| UpdateText:String | IncrCounter | Pull |];
+
+sig initialModel : Model
+var initialModel = (text = "", counter = 0, dataText = "Nout");
+
+var db = database "links";
+var t = table "test" with (i : Int, s : String) from db;
+var maybe = query flat { for (x <-- t) [(a=x.i,b=x.s)] };
+
+fun testQuery(t) {
+    for (x <-- t)
+    where (x.i == 1)
+        [(index = x.i, str = x.s)]
+}
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    open MvuHTML;
+    open MvuAttrs;
+
+    input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
+    p(a0, textNode(model.text)) +*
+    p(a0, textNode(show(model.counter))) +*
+    p(a0, textNode(model.dataText)) +*
+    button(onClick(fun() { IncrCounter }), textNode("Increment")) +*
+    button(onClick(fun() { Pull }), textNode("Pull")) +*
+    a(href("/signup"), textNode("Sign Up"))
+    
+
+}
+
+sig updt : (Msg, Model) ~> Model
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateText(txt) -> (model with text = txt)
+        case IncrCounter -> (model with counter = model.counter + 1)
+        case Pull -> (model with dataText = hd(maybe).b)
+    }
+}
+
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+        <div id = "placeholder"></div>
+}

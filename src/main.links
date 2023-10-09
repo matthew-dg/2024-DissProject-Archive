@@ -1,0 +1,16 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+import HomePage;
+import SignUp;
+import Login;
+
+fun main() {
+
+    addRoute("/", fun(_) { HomePage.mainPage() });
+    addRoute("/signup", fun(_) { SignUp.mainPage() });
+    addRoute("/login", fun(_) { Login.mainPage() });
+    servePages()
+}
+
+main()

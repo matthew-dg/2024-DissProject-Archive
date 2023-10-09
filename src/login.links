@@ -1,0 +1,41 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+
+typename Model = (text: String, counter: Int, homeLink: String);
+
+typename Msg = [| UpdateText:String | IncrCounter |];
+
+sig initialModel : Model
+var initialModel = (text = "", counter = 0, homeLink = "/");
+
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    open MvuHTML;
+    open MvuAttrs;
+
+    p(a0, textNode("Sign Up")) +*
+    p(a0, textNode("Email")) +*
+    # input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
+    p(a0, textNode("Password")) +*
+    p(a0, textNode("Confirm Password")) +*
+    input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
+    p(a0, textNode(model.text)) +*
+    p(a0, textNode(show(model.counter))) +*
+    a(href(model.homeLink), textNode("Home"))
+    }
+
+sig updt : (Msg, Model) ~> Model
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateText(txt) -> (model with text = txt)
+        case IncrCounter -> (model with counter = model.counter + 1)
+    }
+}
+
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+         <div id = "placeholder"></div>
+}

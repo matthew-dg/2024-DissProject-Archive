@@ -42,3 +42,19 @@ Supervisor Name: Simon Fowler
 
 ### 4 October 2023
 * *2 hours* got docker working!
+* *1.5 hours* Had a long look at hotcrp and made notes/vauge outline of how my own schema will look
+* *0.5 hours* Started using links to insert data into the database
+
+### 5 October 2023
+* *1 hour* Now able to pull stuff from the database, began working how out to marry that with the mvu
+* *1.5 hours* still working on the above
+
+### 6 October 2023
+* *0.5 hours* meeting with supervisor
+* *1.5 hours* made good progress on the pulling data from the databse to use in the mvu 
+
+### 7 October 2023
+* *2 hours* added a sign up page and a login page, still need to get them to send data to the database
+
+### 8 October 2023
+* *2.5 hours* Working on marrying the sign up page with the database, still not working 

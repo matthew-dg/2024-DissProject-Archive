@@ -44,3 +44,5 @@ Requires from the review:
 
 * Highly cuztomizable (reviewing, submission, visibilty, etc)
 * Big question: Centralized system for all conferences or seperate instnace for each conference?
+* Tags used for filtering submissions and reviewers
+* Custom mesages can be set for each conference
