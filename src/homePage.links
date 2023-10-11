@@ -10,14 +10,9 @@ sig initialModel : Model
 var initialModel = (text = "", counter = 0, dataText = "Nout");
 
 var db = database "links";
-var t = table "test" with (i : Int, s : String) from db;
-var maybe = query flat { for (x <-- t) [(a=x.i,b=x.s)] };
+var users = table "users" with (email : String, name : String, password : String) from db;
+var maybe = query flat { for (x <-- users) [(a=x.email,b=x.name,c=x.password)] };
 
-fun testQuery(t) {
-    for (x <-- t)
-    where (x.i == 1)
-        [(index = x.i, str = x.s)]
-}
 sig view : (Model) ~> MvuHTML.HTML(Msg)
 fun view(model) {
     open MvuHTML;

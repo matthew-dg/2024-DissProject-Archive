@@ -58,3 +58,11 @@ Supervisor Name: Simon Fowler
 
 ### 8 October 2023
 * *2.5 hours* Working on marrying the sign up page with the database, still not working 
+
+## Week 4
+
+### 9 October 2023
+* *1 hour* Done more on figuring out how the forms work with the mvu, still not working
+
+### 11 October 2023
+* *2 hour* Still working on the above, almost there, just need to figure out how to send the form data to the database
