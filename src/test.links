@@ -1,0 +1,60 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+#fun() { Pull }
+
+var db = database "links";
+var users = table "users" with (email : String, name : String, password : String) from db;
+
+typename Model = (email: String, name: String, password: String,homeLink: String, signUpSuccess: Bool);
+
+typename Msg = [| UpdateEmail:String | UpdateName:String | UpdatePassword:String | Push |];
+
+sig initialModel : Model
+var initialModel = (email = "", name = "", password = "", homeLink = "/", signUpSuccess = false);
+var he = MvuHTML.empty;
+
+fun reverseString(str) {
+    implode(reverse(explode(str)))
+  }
+
+sig insertUser : (String, String, String) ~> ()
+fun insertUser(enteredEmail,enteredName,enteredPassword) {
+    var db = database "links";
+    var users = table "users" with (email : String, name : String, password : String) from db;
+    insert users values (email, name, password) [(email = enteredEmail, name = enteredName, password = enteredPassword)]
+}
+
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    form(a0,
+        input(type("email") +@ placeholder("Email") +@ name("email") +@ onKeyUp(fun(str) { UpdateEmail(str) }), he) +*
+        input(type("text") +@ placeholder("Name") +@ name("name") +@ onKeyUp(fun(str) { UpdateName(str) }), he) +*
+        input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), he) 
+        #+* button(onClick(insertUser(model.email, model.name, model.password)), textNode("Pull")) 
+        +* button(onClick(fun() { Push }), textNode("Increment")) 
+        ) +*
+    p(a0, textNode("WASSSUP")) +*
+    p(a0, textNode(model.email)) +*
+    a(href(model.homeLink), textNode("Home"))
+    }
+
+sig updt : (Msg, Model) ~> (Model)
+fun updt(msg, model) {
+    switch (msg) {
+        case Push -> (MvuCommands.spawnProc(fun() { insertUser(model.email, model.name, model.password) });
+            model with signUpSuccess = true)
+        case UpdateEmail(txt) -> (model with email = txt)
+        case UpdateName(txt) -> (model with name = txt)
+        case UpdatePassword(txt) -> (model with password = txt)
+    }
+}
+
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+        <div id = "placeholder"></div>
+}

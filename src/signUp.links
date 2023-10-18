@@ -2,51 +2,58 @@ open import Mvu;
 open import MvuHTML;
 open import MvuAttrs;
 open import MvuEvents;
+open import MvuCommands;
 
-typename Model = (text: String, counter: Int, homeLink: String, signUpSuccess: Bool);
+var db = database "links";
+var users = table "users" with (email : String, name : String, password : String) from db;
 
-typename Msg = [| UpdateText:String | IncrCounter |];
+typename Model = (result: Int, email: String, name:String, password:String, homeLink:String, signUpSuccess:Bool);
+typename Message = [| StartComputation | DeliverResult | UpdateEmail:String | UpdateName:String | UpdatePassword:String |];
 
 sig initialModel : Model
-var initialModel = (text = "", counter = 0, homeLink = "/", signUpSuccess = false);
-var ae = MvuAttrs.empty;
-var he = MvuHTML.empty;
-
-fun reverseString(str) {
-    implode(reverse(explode(str)))
-  }
+var initialModel = (result = 0,email = "", name = "", password = "", homeLink = "/", signUpSuccess = false);
 
 sig insertUser : (String, String, String) ~> ()
-fun insertUser(enteredEmail,enteredName,enteredPassword) {
+fun insertUser(enteredEmail,enteredName,enteredPassword) server {
     var db = database "links";
     var users = table "users" with (email : String, name : String, password : String) from db;
     insert users values (email, name, password) [(email = enteredEmail, name = enteredName, password = enteredPassword)]
 }
 
-sig view : (Model) ~> MvuHTML.HTML(Msg)
+sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
-    form(a0,
-        input(type("email") +@ placeholder("Email") +@ name("email"), he) +*
-        input(type("text") +@ placeholder("Name") +@ name("name"), he) +*
-        input(type("password") +@ placeholder("Password") +@ name("password"), he) +*
-        input(type("submit") +@ value("Sign Up"), he) 
-        ) +*
+
+  form(a0,
+    input(type("email") +@ placeholder("Email") +@ name("email") +@ onKeyUp(fun(str) { UpdateEmail(str) }), h0) +*
+    input(type("text") +@ placeholder("Name") +@ name("name") +@ onKeyUp(fun(str) { UpdateName(str) }), h0) +*
+    input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), h0) 
+    ) +*
+    button(onClick(fun() { StartComputation }), textNode("Sign Up")) +*
     p(a0, textNode("WASSSUP")) +*
     a(href(model.homeLink), textNode("Home"))
-    }
-
-sig updt : (Msg, Model) ~> Model
-fun updt(msg, model) {
-    switch (msg) {
-        case UpdateText(txt) -> (model with text = txt)
-        case IncrCounter -> (model with counter = model.counter + 1)
-        case Send(txt) -> ( model with signUpSuccess = insertUser(txt.email, txt.name, txt.password))
-    }
 }
 
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+  switch(msg) {
+    case StartComputation ->
+      print(model.email);
+      print(model.name);
+      print(model.password);
+      print("StartComputation");
+      var cmd =
+        MvuCommands.spawnProc(fun() { DeliverResult(insertUser(model.email, model.name, model.password)) });
+      ((model with signUpSuccess = false), cmd)
+    case DeliverResult -> ((model with signUpSuccess = true), MvuCommands.empty)
+    case UpdateEmail(txt) -> ((model with email = txt), MvuCommands.empty)
+    case UpdateName(txt) -> ((model with name = txt), MvuCommands.empty)
+    case UpdatePassword(txt) -> ((model with password = txt), MvuCommands.empty)
+  }
+}
 
 fun mainPage() {
-    Mvu.runSimple("placeholder", initialModel, view, updt);
+  #insertUser("enteredEmail","enteredName","enteredPassword");
+  Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
     page
         <div id = "placeholder"></div>
 }

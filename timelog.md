@@ -65,4 +65,20 @@ Supervisor Name: Simon Fowler
 * *1 hour* Done more on figuring out how the forms work with the mvu, still not working
 
 ### 11 October 2023
-* *2 hour* Still working on the above, almost there, just need to figure out how to send the form data to the database
+* *2 hours* Still working on the above, almost there, just need to figure out how to send the form data to the database
+* *2 hours* basically there, should've been using button instead of submit 
+
+### 14 October 2023
+* *2 hours* Looked into the mvu commands library, hopefully will be able to use it to get this working. 
+
+### 15 October 2023
+* *5 hours* Integrated the commnads library into the sign up page, Should now be able to send data to the database (Will test tomorrow)
+
+## Week 5
+
+### 16 October 2023
+
+* *1 hour* tested the sign up page, not working
+
+### 18 October 2023
+* *0.5 hours* It's working!
