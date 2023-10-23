@@ -82,3 +82,15 @@ Supervisor Name: Simon Fowler
 
 ### 18 October 2023
 * *0.5 hours* It's working!
+* *3 hours* Added a login page, some refactoring 
+
+### 19 October 2023
+* *3 hours* More work on logins, coluldn't figure out redirects 
+
+### 20 October 2023
+* *0.5 hours* meeting with supervisor
+
+### 22 October 2023
+* *2 hours* Set up cookies and fixed bugs related to them
+* *0.5 hour* redircts now working
+* *1.5 hours* Added logout functionality and began working on only showing certain pages if logged in / not logged in

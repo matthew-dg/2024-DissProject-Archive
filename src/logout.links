@@ -1,0 +1,45 @@
+import Mvu;
+import MvuHTML;
+import MvuAttrs;
+
+typename Model = (userEmail: String);
+
+typename Msg = [| UpdateText:String |];
+
+sig initialModel : Model
+var initialModel = (userEmail = "");
+
+
+sig view : (Model) ~> MvuHTML.HTML(Msg)
+fun view(model) {
+    open MvuHTML;
+    open MvuAttrs;
+
+    var loggedIn = if ( model.userEmail <> "") {
+        model.userEmail
+    } else {
+        "Not logged in"
+    };
+
+    p(a0, textNode(loggedIn)) +*
+    a(href("/"), textNode("Home")) +*
+    a(href("/signup"), textNode("Sign Up")) +*
+    a(href("/login"), textNode("Login"))
+    
+    
+
+}
+
+sig updt : (Msg, Model) ~> Model
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateText(txt) -> (model with userEmail = "")
+    }
+}
+
+fun mainPage() {
+    setCookie("currentUser", "");
+    Mvu.runSimple("placeholder", initialModel, view, updt);
+    page
+        <div id = "placeholder"></div>
+}

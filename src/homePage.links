@@ -2,12 +2,12 @@ import Mvu;
 import MvuHTML;
 import MvuAttrs;
 
-typename Model = (text: String, counter: Int, dataText: String);
+typename Model = (text: String, counter: Int, dataText: String, userEmail: String);
 
 typename Msg = [| UpdateText:String | IncrCounter | Pull |];
 
 sig initialModel : Model
-var initialModel = (text = "", counter = 0, dataText = "Nout");
+var initialModel = (text = "", counter = 0, dataText = "Nout", userEmail = "");
 
 var db = database "links";
 var users = table "users" with (email : String, name : String, password : String) from db;
@@ -18,21 +18,36 @@ fun view(model) {
     open MvuHTML;
     open MvuAttrs;
 
+    var loggedIn = if ( model.userEmail <> "") {
+        model.userEmail
+    } else {
+        "Not logged in"
+    };
+
+    p(a0, textNode(loggedIn)) +*
     input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
     p(a0, textNode(model.text)) +*
     p(a0, textNode(show(model.counter))) +*
     p(a0, textNode(model.dataText)) +*
     button(onClick(fun() { IncrCounter }), textNode("Increment")) +*
     button(onClick(fun() { Pull }), textNode("Pull")) +*
-    a(href("/signup"), textNode("Sign Up"))
-    
-
+    if ( model.userEmail <> "") {
+        a(href("/signup"), textNode("Sign Up")) +*
+        a(href("/login"), textNode("Login")) 
+    } else {
+        a(href("/logout"), textNode("Logout"))
+    };
+    #a(href("/signup"), textNode("Sign Up")) +*
+    #a(href("/login"), textNode("Login")) +*
+    #a(href("/logout"), textNode("Logout"))
 }
 
 sig updt : (Msg, Model) ~> Model
 fun updt(msg, model) {
     switch (msg) {
-        case UpdateText(txt) -> (model with text = txt)
+        case UpdateText(txt) -> 
+            print(model.userEmail);
+            (model with text = txt)
         case IncrCounter -> (model with counter = model.counter + 1)
         case Pull -> (model with dataText = hd(maybe).b)
     }
@@ -40,7 +55,10 @@ fun updt(msg, model) {
 
 
 fun mainPage() {
-    Mvu.runSimple("placeholder", initialModel, view, updt);
+    var user = getCookie("currentUser");
+    var sendModel = (initialModel with userEmail = user);
+
+    Mvu.runSimple("placeholder", sendModel, view, updt);
     page
         <div id = "placeholder"></div>
 }

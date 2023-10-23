@@ -1,0 +1,8 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+
+var db = database "links";
+var users = table "users" with (email : String, name : String, password : String) from db;  

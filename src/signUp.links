@@ -7,11 +7,11 @@ open import MvuCommands;
 var db = database "links";
 var users = table "users" with (email : String, name : String, password : String) from db;
 
-typename Model = (result: Int, email: String, name:String, password:String, homeLink:String, signUpSuccess:Bool);
-typename Message = [| StartComputation | DeliverResult | UpdateEmail:String | UpdateName:String | UpdatePassword:String |];
+typename Model = (email: String, password:String, name:String, signUpSuccess:Bool);
+typename Message = [| TrySignUp | DeliverResult | UpdateEmail:String | UpdateName:String | UpdatePassword:String |];
 
 sig initialModel : Model
-var initialModel = (result = 0,email = "", name = "", password = "", homeLink = "/", signUpSuccess = false);
+var initialModel = (email = "", password = "", name = "" ,signUpSuccess = false);
 
 sig insertUser : (String, String, String) ~> ()
 fun insertUser(enteredEmail,enteredName,enteredPassword) server {
@@ -26,21 +26,18 @@ fun view(model) {
   form(a0,
     input(type("email") +@ placeholder("Email") +@ name("email") +@ onKeyUp(fun(str) { UpdateEmail(str) }), h0) +*
     input(type("text") +@ placeholder("Name") +@ name("name") +@ onKeyUp(fun(str) { UpdateName(str) }), h0) +*
-    input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), h0) 
+    input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), h0) +*
+    button(onClick(fun() { TrySignUp }), textNode("Sign Up"))
     ) +*
-    button(onClick(fun() { StartComputation }), textNode("Sign Up")) +*
+
     p(a0, textNode("WASSSUP")) +*
-    a(href(model.homeLink), textNode("Home"))
+    a(href("/"), textNode("Home"))
 }
 
 sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
 fun updt(msg, model) {
   switch(msg) {
-    case StartComputation ->
-      print(model.email);
-      print(model.name);
-      print(model.password);
-      print("StartComputation");
+    case TrySignUp ->
       var cmd =
         MvuCommands.spawnProc(fun() { DeliverResult(insertUser(model.email, model.name, model.password)) });
       ((model with signUpSuccess = false), cmd)

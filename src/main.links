@@ -4,12 +4,15 @@ import MvuAttrs;
 import HomePage;
 import SignUp;
 import Login;
+import Logout;
 
 fun main() {
 
     addRoute("/", fun(_) { HomePage.mainPage() });
     addRoute("/signup", fun(_) { SignUp.mainPage() });
     addRoute("/login", fun(_) { Login.mainPage() });
+    #addRoute("/submitPaper", fun(_) { SubmitPaper.mainPage() });
+    addRoute("/logout", fun(_) { Logout.mainPage() });
     servePages()
 }
 

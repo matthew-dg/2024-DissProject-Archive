@@ -1,41 +1,58 @@
-import Mvu;
-import MvuHTML;
-import MvuAttrs;
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+import HomePage;
 
-typename Model = (text: String, counter: Int, homeLink: String);
+typename Model = (email: String, password: String, loginSuccess:Bool);
 
-typename Msg = [| UpdateText:String | IncrCounter |];
+typename Message = [| DeliverResult:Bool | TryLogin | UpdateEmail:String | UpdatePassword:String |];
 
 sig initialModel : Model
-var initialModel = (text = "", counter = 0, homeLink = "/");
+var initialModel = (email = "", password = "", loginSuccess = false);
 
-sig view : (Model) ~> MvuHTML.HTML(Msg)
+#placeholder till real authentication is implemented
+sig validAuth : (String, String) -> Bool
+fun validAuth(email, pass) {
+  email == "2571284d@student.gla.ac.uk" && pass == "Blah"
+}
+
+sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
-    open MvuHTML;
-    open MvuAttrs;
-
-    p(a0, textNode("Sign Up")) +*
-    p(a0, textNode("Email")) +*
-    # input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
-    p(a0, textNode("Password")) +*
-    p(a0, textNode("Confirm Password")) +*
-    input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
-    p(a0, textNode(model.text)) +*
-    p(a0, textNode(show(model.counter))) +*
-    a(href(model.homeLink), textNode("Home"))
+    
+  form(a0,
+    input(type("email") +@ placeholder("Email") +@ name("email") +@ onKeyUp(fun(str) { UpdateEmail(str) }), h0) +*
+    input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), h0) +*
+    button(onClick(fun() { TryLogin }), textNode("Sign Up")) 
+    ) +*
+    
+    a(href("/"), textNode("Home"))
     }
 
-sig updt : (Msg, Model) ~> Model
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
 fun updt(msg, model) {
-    switch (msg) {
-        case UpdateText(txt) -> (model with text = txt)
-        case IncrCounter -> (model with counter = model.counter + 1)
-    }
+  switch(msg) {
+    case TryLogin ->
+      var cmd =
+        MvuCommands.spawnProc(fun() { DeliverResult(validAuth(model.email, model.password)) });
+      ((model with loginSuccess = false), cmd)
+    case DeliverResult(correct) -> 
+      var home = if (correct) {
+        setCookie("currentUser", model.email);
+        redirect("/")
+      } else {
+        setCookie("curentUser", "")
+      };
+    ((model with loginSuccess = correct), MvuCommands.empty)
+    case UpdateEmail(txt) -> ((model with email = txt), MvuCommands.empty)
+    case UpdatePassword(txt) -> ((model with password = txt), MvuCommands.empty)
+  }
 }
 
 
 fun mainPage() {
-    Mvu.runSimple("placeholder", initialModel, view, updt);
+    Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
     page
          <div id = "placeholder"></div>
 }
