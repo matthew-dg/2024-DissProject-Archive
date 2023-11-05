@@ -15,8 +15,6 @@ var initialModel = (email = "", password = "", name = "" ,signUpSuccess = false)
 
 sig insertUser : (String, String, String) ~> ()
 fun insertUser(enteredEmail,enteredName,enteredPassword) server {
-    var db = database "links";
-    var users = table "users" with (email : String, name : String, password : String) from db;
     insert users values (email, name, password) [(email = enteredEmail, name = enteredName, password = enteredPassword)]
 }
 
@@ -31,7 +29,7 @@ fun view(model) {
     ) +*
 
     p(a0, textNode("WASSSUP")) +*
-    a(href("/"), textNode("Home"))
+    a(href("/login"), textNode("Log In"))
 }
 
 sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
@@ -49,7 +47,13 @@ fun updt(msg, model) {
 }
 
 fun mainPage() {
-  #insertUser("enteredEmail","enteredName","enteredPassword");
+  var loggedIn = getCookie("currentUser") <> "";
+    if (loggedIn) {
+        redirect("/")
+    } else {
+        ()
+    };
+
   Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
     page
         <div id = "placeholder"></div>

@@ -94,3 +94,31 @@ Supervisor Name: Simon Fowler
 * *2 hours* Set up cookies and fixed bugs related to them
 * *0.5 hour* redircts now working
 * *1.5 hours* Added logout functionality and began working on only showing certain pages if logged in / not logged in
+
+## Week 6
+
+### 23 October 2023
+* *1.5 hours* still working on the above, need to look furhter into the mvu atrributes library
+
+### 26 October 2023
+* *2 hours* updated schema, had issues with the database, fixed now
+* *0.5 hours* Started on the paper submission page
+
+### 27 October 2023
+* *0.5 hours* meeting with supervisor
+
+## Week 7
+
+### 1 November 2023
+* *1 hour* Reconfigured login flow 
+* *1 hour* looked into todoMVC and how it applies to paper submission
+
+### 2 November 2023
+* *0.5 hours* meeting with supervisor
+
+### 3 November 2023
+* *3 hours* got the paper submission page working, still need to add multiple authors
+
+### 4 November 2023
+* *0.5 hours* started on adding multiple authors
+* *3 hours* Still working on the above, almost there

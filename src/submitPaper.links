@@ -4,5 +4,132 @@ open import MvuAttrs;
 open import MvuEvents;
 open import MvuCommands;
 
+#Model and Message definitions
+typename Author = (email: String, name: String, affiliation: String, editing: Bool, idNum: Int);
+typename Model = (title: String, abstract: String, body: String, topic: String, conflicts: String, submit: Bool,authors: [Author]);
+
+sig initialModel : Model
+var initialModel = (title = "", abstract = "", body = "", topic = "", conflicts = "", submit = false , authors = []);
+
+typename Message = 
+    [| UpdateTitle:String 
+    | UpdateAbstract:String 
+    | UpdateBody:String 
+    | UpdateTopic:String 
+    | UpdateConflicts:String 
+    | AddAuthor
+    | TrySubmit 
+    | DeliverResult |];
+
+#helper functions
+sig newAuthor : (String, String, String, Int) ~> Author
+fun newAuthor(email,name,affiliation,num) {
+    (email = email, name = name, affiliation = affiliation, editing = false, idNum = num)
+}
+
+fun updateFieldHandler() {
+  onInput(fun (str) { UpdateAbstract(str) })
+}
+
+fun enterHandler() {
+  onEnter(fun() { AddAuthor })
+}
+
+fun getAddedAuthor(model) {
+  if (model.field == "") {
+    model.entries
+  } else {
+    model.entries ++ [newEntry(model.field, model.uid)]
+  }
+}
+
+
+fun ca(xs) { MvuAttrs.concat(xs) }
+fun ch(xs) { MvuHTML.concat(xs) }
+var noAttrs = MvuAttrs.empty;
+var noChildren = MvuHTML.empty;
+
+#Database
 var db = database "links";
-var users = table "users" with (email : String, name : String, password : String) from db;  
+var papers = table "papers" with (title : String, abstract : String, body : String, topic : String, conflicts : String) from db;  
+
+sig insertPaper : (String, String, String, String, String) ~> ()
+fun insertPaper(enteredTitle,enteredAbstract,enteredBody,enteredTopic,enteredConflicts) server {
+    insert papers values (title, abstract, body, topic, conflicts) 
+    [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)]
+}
+#Views 
+sig viewAuthorInput : (String) ~> HTML(Message)
+fun viewAuthorInput(task) {
+  header (class("header"),
+    ch([
+      h1 (noAttrs, textNode("todos")),
+      input (
+        ca([type ("text"),
+            class ("new-todo"),
+            placeholder ("What needs to be done?"),
+            name ("newTodo"),
+            id("newTodo"),
+            value(task),
+            updateFieldHandler(),
+            enterHandler()]),
+        noChildren)
+    ]))
+}
+
+sig viewPaperInput : (Model) ~> HTML(Message)
+fun viewPaperInput(model) {
+      form(a0,
+        input(type("text") +@ placeholder("Title") +@ name("title") +@ onKeyUp(fun(str) { UpdateTitle(str) }), h0) +*
+        input(type("text") +@ placeholder("Abstract") +@ name("abstract") +@ onKeyUp(fun(str) { UpdateAbstract(str) }), h0) +*
+        input(type("textarea") +@ placeholder("Body") +@ name("body") +@ onKeyUp(fun(str) { UpdateBody(str) }), h0) +*
+        input(type("text") +@ placeholder("Topic") +@ name("topic") +@ onKeyUp(fun(str) { UpdateTopic(str) }), h0) +*
+        input(type("text") +@ placeholder("Conflicts") +@ name("conflicts") +@ onKeyUp(fun(str) { UpdateConflicts(str) }), h0) +*
+        button(onClick(fun() { TrySubmit }), textNode("Submit"))
+        ) +*
+
+    
+
+    a(href("/"), textNode("Home"))
+}
+
+
+sig view : (Model) ~> MvuHTML.HTML(Message)
+fun view(model) {
+ div (class ("todomvc-wrapper"),
+    section (class ("todoapp"), ch([
+      viewPaperInput(model),
+      viewAuthorInput(model.abstract)
+    ]))
+  )
+}
+
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+  switch(msg) {
+    case TrySubmit ->
+      var cmd =
+        MvuCommands.spawnProc(fun() { DeliverResult(insertPaper(model.title, model.abstract, model.body, model.topic, model.conflicts)) });
+      ((model with submit = false), cmd)
+    case AddAuthor -> ((model with authors = model.authors ++ [newAuthor("","","",length(model.authors))]), MvuCommands.empty)
+    case DeliverResult -> ((model with submit = true), MvuCommands.empty)
+    case UpdateTitle(txt) -> ((model with title = txt), MvuCommands.empty)
+    case UpdateAbstract(txt) -> ((model with abstract = txt), MvuCommands.empty)
+    case UpdateBody(txt) -> ((model with body = txt), MvuCommands.empty)
+    case UpdateTopic(txt) -> ((model with topic = txt), MvuCommands.empty)
+    case UpdateConflicts(txt) -> ((model with conflicts = txt), MvuCommands.empty)
+  }
+}
+
+fun mainPage() {
+  var loggedIn = getCookie("currentUser") <> "";
+    if (loggedIn) {
+        ()
+    } else {
+        redirect("/")
+    };
+
+  Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
+    page
+        <div id = "placeholder"></div>
+}

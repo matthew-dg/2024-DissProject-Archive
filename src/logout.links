@@ -16,9 +16,9 @@ fun view(model) {
     open MvuAttrs;
 
     var loggedIn = if ( model.userEmail <> "") {
-        model.userEmail
+        "This isn't meant to happen, try again"
     } else {
-        "Not logged in"
+        "You have been logged out"
     };
 
     p(a0, textNode(loggedIn)) +*

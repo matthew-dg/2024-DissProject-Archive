@@ -27,7 +27,7 @@ fun view(model) {
     button(onClick(fun() { TryLogin }), textNode("Sign Up")) 
     ) +*
     
-    a(href("/"), textNode("Home"))
+    a(href("/signup"), textNode("Sign Up"))
     }
 
 sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
@@ -52,6 +52,13 @@ fun updt(msg, model) {
 
 
 fun mainPage() {
+    var loggedIn = getCookie("currentUser") <> "";
+    if (loggedIn) {
+        redirect("/")
+    } else {
+        ()
+    };
+
     Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
     page
          <div id = "placeholder"></div>

@@ -18,35 +18,23 @@ fun view(model) {
     open MvuHTML;
     open MvuAttrs;
 
-    var loggedIn = if ( model.userEmail <> "") {
-        model.userEmail
-    } else {
-        "Not logged in"
-    };
-
-    p(a0, textNode(loggedIn)) +*
+    p(a0, textNode(model.userEmail)) +*
     input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
     p(a0, textNode(model.text)) +*
     p(a0, textNode(show(model.counter))) +*
     p(a0, textNode(model.dataText)) +*
     button(onClick(fun() { IncrCounter }), textNode("Increment")) +*
     button(onClick(fun() { Pull }), textNode("Pull")) +*
-    if ( model.userEmail <> "") {
-        a(href("/signup"), textNode("Sign Up")) +*
-        a(href("/login"), textNode("Login")) 
-    } else {
-        a(href("/logout"), textNode("Logout"))
-    };
-    #a(href("/signup"), textNode("Sign Up")) +*
-    #a(href("/login"), textNode("Login")) +*
-    #a(href("/logout"), textNode("Logout"))
+    a(href("/signup"), textNode("Sign Up")) +*
+    a(href("/login"), textNode("Log In")) +*
+    a(href("/logout"), textNode("Logout")) +*
+    a(href("/submitPaper"), textNode("Submit Paper"))
 }
 
 sig updt : (Msg, Model) ~> Model
 fun updt(msg, model) {
     switch (msg) {
         case UpdateText(txt) -> 
-            print(model.userEmail);
             (model with text = txt)
         case IncrCounter -> (model with counter = model.counter + 1)
         case Pull -> (model with dataText = hd(maybe).b)
@@ -56,6 +44,14 @@ fun updt(msg, model) {
 
 fun mainPage() {
     var user = getCookie("currentUser");
+    
+    var loggedIn = user <> "";
+    if (loggedIn) {
+        ()
+    } else {
+        redirect("/login")
+    };
+
     var sendModel = (initialModel with userEmail = user);
 
     Mvu.runSimple("placeholder", sendModel, view, updt);
