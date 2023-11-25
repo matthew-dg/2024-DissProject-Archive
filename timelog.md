@@ -122,3 +122,37 @@ Supervisor Name: Simon Fowler
 ### 4 November 2023
 * *0.5 hours* started on adding multiple authors
 * *3 hours* Still working on the above, almost there
+
+### 5 November 2023
+* *3 hours* changed how im doing the multiple authors, now managing the authors index outiside of the input section
+
+## Week 8
+
+### 8 November 2023
+* *2.5 hours* multiple authors nearly working
+
+### 9 November 2023
+* *0.5 hours* meeting with supervisor
+
+### 11 November 2023
+* *1 hour* multiple authors now bassically working, just need to generalise it from the name field to all fields
+
+### 12 November 2023
+* *1 hour* spent a hour fixing a bug that was caused by a typo, always use type annotations!
+* *2 hours* multiple authors now working for all fields, now working on allowing the user to edit the authors
+* *2 hours* Editing authors now working, just need to add the ability to delete authors and submit the paper to the database
+
+## Week 9
+
+### 18 November 2023
+* *2 hours* Encountered issues submitting the paper to the database, will look into it tomorrow
+
+## week 10
+
+### 23 November 2023
+* *1 hours* still working on the above 
+* *3 hours* still working on the above also began working on the paper list page
+
+### 24 November 2023
+* *0.5 hours* meeting with supervisor
+* *4.5 hours* still working on the above, almost there
