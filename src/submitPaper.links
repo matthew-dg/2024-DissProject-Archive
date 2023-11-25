@@ -6,10 +6,33 @@ open import MvuCommands;
 
 #Model and Message definitions
 typename Author = (email: String, name: String, affiliation: String, editing: Bool, idNum: Int);
-typename Model = (title: String, abstract: String, body: String, topic: String, conflicts: String, submit: Bool,authors: [Author]);
+typename Model = (title: String, 
+    abstract: String, 
+    body: String, 
+    topic: String, 
+    conflicts: String, 
+    submit: Bool,
+    authors: [Author], 
+    currentAuthor: Int,
+    currentAuthorName: String,
+    currentAuthorEmail: String,
+    currentAuthorAffiliation: String);
+
+#Used to package the info to be sent to the database for the authors
+typename AuthorInfo = (userEmail: String, paperId: Int, authorOrder: Int);
 
 sig initialModel : Model
-var initialModel = (title = "", abstract = "", body = "", topic = "", conflicts = "", submit = false , authors = []);
+var initialModel = (title = "", 
+    abstract = "", 
+    body = "",  
+    topic = "", 
+    conflicts = "", 
+    submit = false , 
+    authors = [],
+    currentAuthor = 0,
+    currentAuthorName = "",
+    currentAuthorEmail = "",
+    currentAuthorAffiliation = "");
 
 typename Message = 
     [| UpdateTitle:String 
@@ -17,29 +40,57 @@ typename Message =
     | UpdateBody:String 
     | UpdateTopic:String 
     | UpdateConflicts:String 
+    | UpdateAuthorName:(String, Int)
+    | UpdateAuthorEmail:(String, Int)
+    | UpdateAuthorAffiliation:(String, Int)
     | AddAuthor
     | TrySubmit 
     | DeliverResult |];
 
 #helper functions
-sig newAuthor : (String, String, String, Int) ~> Author
-fun newAuthor(email,name,affiliation,num) {
-    (email = email, name = name, affiliation = affiliation, editing = false, idNum = num)
+fun isInList(x, xs) {
+  if (xs == []) {
+    false
+  } else {
+    if (x == hd(xs)) {
+      true
+    } else {
+      isInList(x, tl(xs))
+    }
+  }
 }
 
-fun updateFieldHandler() {
-  onInput(fun (str) { UpdateAbstract(str) })
+fun updateEmailHandler(id) {
+  onInput(fun (str) { UpdateAuthorEmail(str, id) })
+}
+
+fun updateNameHandler(id) {
+  onInput(fun (str) { UpdateAuthorName(str, id) })
+}
+
+fun updateAffiliationHandler(id) {
+  onInput(fun (str) { UpdateAuthorAffiliation(str, id) })
 }
 
 fun enterHandler() {
   onEnter(fun() { AddAuthor })
 }
 
+fun updateEntryHandler(id) {
+  onInput(fun(str) { UpdateEntry(id, str) })
+}
+
+sig newAuthor : (String, String, String, Int) ~> Author
+fun newAuthor(email,name,affiliation,num) {
+    (email = email, name = name, affiliation = affiliation, editing = false, idNum = num)
+}
+
+sig getAddedAuthor : (Model) ~> [Author]
 fun getAddedAuthor(model) {
-  if (model.field == "") {
-    model.entries
+  if (model.currentAuthorName == "") {
+    model.authors
   } else {
-    model.entries ++ [newEntry(model.field, model.uid)]
+    model.authors ++ [newAuthor(model.currentAuthorEmail, model.currentAuthorName, model.currentAuthorAffiliation, model.currentAuthor)]
   }
 }
 
@@ -49,33 +100,110 @@ fun ch(xs) { MvuHTML.concat(xs) }
 var noAttrs = MvuAttrs.empty;
 var noChildren = MvuHTML.empty;
 
+
 #Database
 var db = database "links";
 var papers = table "papers" with (title : String, abstract : String, body : String, topic : String, conflicts : String) from db;  
+var userPaper = table "userPaper" with (userEmail : String, paperId : Int, order: Int) from db;
+var users = table "users" with (email : String, name : String, password : String, id: Int) from db;
 
-sig insertPaper : (String, String, String, String, String) ~> ()
-fun insertPaper(enteredTitle,enteredAbstract,enteredBody,enteredTopic,enteredConflicts) server {
-    insert papers values (title, abstract, body, topic, conflicts) 
-    [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)]
+
+sig insertPaper : (String, String, String, String, String, [Author]) ~> ()
+fun insertPaper(enteredTitle,enteredAbstract,enteredBody, enteredTopic, enteredConflicts, enteredAuthors) server {
+  var orderCounter = 0;
+  var submisionInfo = for(a <- enteredAuthors) {
+    [(userEmail = a.email, paperId = 0, order = orderCounter)]
+  };
+  print("inserting paper");
+  insert userPaper values (userEmail, order, paperId) submisionInfo;
+  print("inserted paper");
+  insert papers values (title, abstract, body,topic,conflicts) [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)]
 }
 #Views 
-sig viewAuthorInput : (String) ~> HTML(Message)
-fun viewAuthorInput(task) {
+sig viewNewAuthorInput : (Model) ~> HTML(Message)
+fun viewNewAuthorInput(model) {
   header (class("header"),
     ch([
-      h1 (noAttrs, textNode("todos")),
+      h1 (noAttrs, textNode("Authors")),
       input (
         ca([type ("text"),
-            class ("new-todo"),
-            placeholder ("What needs to be done?"),
-            name ("newTodo"),
-            id("newTodo"),
-            value(task),
-            updateFieldHandler(),
+            class ("new-author"),
+            placeholder ("Name"),
+            name ("newAuthor"),
+            value(model.currentAuthorName),
+            updateNameHandler(model.currentAuthor),
             enterHandler()]),
-        noChildren)
+        noChildren),
+      input (
+        ca([type ("Email"),
+            class ("new-author"),
+            placeholder ("Email"),
+            name ("newAuthor"),
+            value(model.currentAuthorEmail),
+            updateEmailHandler(model.currentAuthor),
+            enterHandler()]),
+        noChildren),
+      input (
+        ca([type ("text"),
+            class ("new-author"),
+            placeholder ("Affiliation"),
+            name ("newAuthor"),
+            value(model.currentAuthorAffiliation),
+            updateAffiliationHandler(model.currentAuthor),
+            enterHandler()]),
+        noChildren)  
     ]))
 }
+
+sig viewSingleAuthor : (Author) ~> HTML(Message)
+fun viewSingleAuthor(author) {
+  header (class("view"), ch([
+    input(
+      ca([
+        type("text"),
+        class("edit"),
+        value(author.name),
+        name("title"),
+        updateNameHandler(author.idNum),
+        id("todo-" ^^ (author.name))]),
+
+        #blurHandler(todo.id, false),
+        #editingEnterHandler(todo.id, false)]),
+        noChildren),
+    input(
+      ca([
+        type("text"),
+        class("edit"),
+        value(author.email),
+        name("title"),
+        id("todo-" ^^ (author.email))]),
+        #updateEntryHandler(todo.id),
+        #blurHandler(todo.id, false),
+        #editingEnterHandler(todo.id, false)]),
+        noChildren),
+    input(
+      ca([
+        type("text"),
+        class("edit"),
+        value(author.affiliation),
+        name("title"),
+        id("todo-" ^^ (author.affiliation))]),
+        #updateEntryHandler(todo.id),
+        #blurHandler(todo.id, false),
+        #editingEnterHandler(todo.id, false)]),
+        noChildren)
+  ]))
+}
+
+sig viewAuthors : ([Author]) ~> HTML(Message)
+fun viewAuthors(authors) {
+  section (class("main"), ch([
+    ul(
+      ca([
+        class("todo-list")]),
+        ch(map(viewSingleAuthor, authors)))]))
+}
+
 
 sig viewPaperInput : (Model) ~> HTML(Message)
 fun viewPaperInput(model) {
@@ -99,7 +227,8 @@ fun view(model) {
  div (class ("todomvc-wrapper"),
     section (class ("todoapp"), ch([
       viewPaperInput(model),
-      viewAuthorInput(model.abstract)
+      viewNewAuthorInput(model),
+      viewAuthors(model.authors)
     ]))
   )
 }
@@ -109,15 +238,32 @@ fun updt(msg, model) {
   switch(msg) {
     case TrySubmit ->
       var cmd =
-        MvuCommands.spawnProc(fun() { DeliverResult(insertPaper(model.title, model.abstract, model.body, model.topic, model.conflicts)) });
+        MvuCommands.spawnProc(fun() { DeliverResult(insertPaper(model.title, model.abstract, model.body, model.topic, model.conflicts, model.authors)) });
       ((model with submit = false), cmd)
-    case AddAuthor -> ((model with authors = model.authors ++ [newAuthor("","","",length(model.authors))]), MvuCommands.empty)
+    case AddAuthor -> 
+      ((model with currentAuthor = model.currentAuthor + 1, currentAuthorName = "", 
+      currentAuthorEmail = "", currentAuthorAffiliation = "", authors = getAddedAuthor(model)), MvuCommands.empty)
     case DeliverResult -> ((model with submit = true), MvuCommands.empty)
     case UpdateTitle(txt) -> ((model with title = txt), MvuCommands.empty)
     case UpdateAbstract(txt) -> ((model with abstract = txt), MvuCommands.empty)
     case UpdateBody(txt) -> ((model with body = txt), MvuCommands.empty)
     case UpdateTopic(txt) -> ((model with topic = txt), MvuCommands.empty)
     case UpdateConflicts(txt) -> ((model with conflicts = txt), MvuCommands.empty)
+    case UpdateAuthorName(txt, id) -> 
+      if(model.currentAuthor == id) { 
+        ((model with currentAuthorName = txt), MvuCommands.empty)
+      } else {
+        var updateAuthor = fun(author) {
+          if(author.idNum == id) {
+            (author with name = txt)
+          } else {
+            author
+          }
+        };
+        ((model with authors = map(updateAuthor, model.authors)), MvuCommands.empty)
+      }
+    case UpdateAuthorEmail(txt, id) -> ((model with currentAuthorEmail = txt), MvuCommands.empty)
+    case UpdateAuthorAffiliation(txt, id) -> ((model with currentAuthorAffiliation = txt), MvuCommands.empty)
   }
 }
 

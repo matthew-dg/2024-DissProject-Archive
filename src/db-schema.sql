@@ -1,13 +1,15 @@
 CREATE TABLE users(
     userId SERIAL PRIMARY KEY,
     name text NOT NULL,
-    email text NOT NULL,
+    email text unique NOT NULL,
     password text NOT NULL,
-    afiliation text DEFAULT NULL
+    afiliation text DEFAULT NULL,
+    pcMember BOOLEAN DEFAULT FALSE,
+    admin BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE userPaper(
-    userId INT NOT NULL REFERENCES users(userId),
+    userEmail text NOT NULL REFERENCES users(email),
     paperId INT NOT NULL REFERENCES papers(paperId),
     submissionId SERIAL PRIMARY KEY,
     authorOrder INT NOT NULL

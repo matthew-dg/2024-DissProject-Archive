@@ -1,0 +1,38 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+open import Template;
+open import RenderMarkup;
+
+#Model and Message definitions
+typename paperId = Int;
+
+typename Paper = (title: String, 
+    abstract: String, 
+    body: String, 
+    topic: String, 
+    conflicts: String, 
+); 
+
+typename Model = Maybe(Paper);
+
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+  switch(msg) {
+    case TrySubmit ->
+      var cmd =
+        MvuCommands.spawnProc(fun() { DeliverResult(insertPaper(model.title, model.abstract, model.body, model.topic, model.conflicts)) });
+      ((model with submit = false), cmd)
+    case DeliverResult -> ((model with submit = true), MvuCommands.empty)
+    case UpdateTitle(txt) -> ((model with title = txt), MvuCommands.empty)
+    case UpdateAbstract(txt) -> ((model with abstract = txt), MvuCommands.empty)
+    case UpdateBody(txt) -> ((model with body = txt), MvuCommands.empty)
+    case UpdateTopic(txt) -> ((model with topic = txt), MvuCommands.empty)
+    case UpdateConflicts(txt) -> ((model with conflicts = txt), MvuCommands.empty)
+  }
+
+fun view(model) {
+    var renderedTitle = RenderMarkup.renderSimple(model.title);
+}

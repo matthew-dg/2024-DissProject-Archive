@@ -22,9 +22,9 @@ sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
 
   form(a0,
-    input(type("email") +@ placeholder("Email") +@ name("email") +@ onKeyUp(fun(str) { UpdateEmail(str) }), h0) +*
-    input(type("text") +@ placeholder("Name") +@ name("name") +@ onKeyUp(fun(str) { UpdateName(str) }), h0) +*
-    input(type("password") +@ placeholder("Password") +@ name("password") +@ onKeyUp(fun(str) { UpdatePassword(str) }), h0) +*
+    input(type("email") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateEmail(str) }), h0) +*
+    input(type("text") +@ placeholder("Name") +@ name("name") +@ onInput(fun(str) { UpdateName(str) }), h0) +*
+    input(type("password") +@ placeholder("Password") +@ name("password") +@ onInput(fun(str) { UpdatePassword(str) }), h0) +*
     button(onClick(fun() { TrySignUp }), textNode("Sign Up"))
     ) +*
 
