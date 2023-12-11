@@ -28,7 +28,8 @@ fun view(model) {
     a(href("/signup"), textNode("Sign Up")) +*
     a(href("/login"), textNode("Log In")) +*
     a(href("/logout"), textNode("Logout")) +*
-    a(href("/submitPaper"), textNode("Submit Paper"))
+    a(href("/submitPaper"), textNode("Submit Paper")) +*
+    a(href("/PaperList"), textNode("Papers"))
 }
 
 sig updt : (Msg, Model) ~> Model

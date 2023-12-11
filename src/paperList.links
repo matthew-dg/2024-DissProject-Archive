@@ -1,0 +1,46 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+
+#Model and Message definitions
+typename Author = (email: String, name: String, affiliation: String, idNum: Int);
+typename PaperResult = (title: String,
+    abstract: String, 
+    body: String, 
+    topic: String, 
+    conflicts: String, 
+    authors: [Author]);
+typename Filter = String;
+typename Model = (filterType: Filter, filterDesc: String, results: [(String, String)]);
+
+fun view(model) {
+  open MvuHTML;
+  open MvuAttrs;
+
+  var keylist =
+    MvuHTML.concatMap(fun((k, v)) { p(a0, textNode("Key: " ^^ k) +* textNode(" Value " ^^ v)) },
+            model.results);
+
+  div(a0, keylist) +*
+  p(a0, textNode("Filter by: "))
+}
+
+#Database
+var db = database "links";
+var papers = table "papers" with (title : String, paperid : Int, abstract : String, body : String, topic : String, conflicts : String) from db;
+
+sig getInitialModel : () ~> Model
+fun getInitialModel() {
+  var allPapers = query flat { for (x <-- papers) [(a=x.title,b=x.paperid,c=x.abstract,d=x.body,e=x.topic,f=x.conflicts)] };
+  (filterType = "", filterDesc = "", results = [("Title", "Paper ID"), ("a test", "this")])
+}
+
+
+fun mainPage() {
+  var initialModel = getInitialModel();
+  Mvu.runStatic("placeholder", initialModel, view);
+      page
+        <div id = "placeholder"></div>
+}

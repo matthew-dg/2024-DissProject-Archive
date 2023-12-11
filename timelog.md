@@ -156,3 +156,25 @@ Supervisor Name: Simon Fowler
 ### 24 November 2023
 * *0.5 hours* meeting with supervisor
 * *4.5 hours* still working on the above, almost there
+
+### 26 November 2023
+* *1.5 hours* paper submission now working, few bugs to fix but it's working
+
+## Week 11
+
+### 30 November 2023
+
+* *0.5 hours* meeting with supervisor
+* *1.5 hours* fixed bugs with the paper submission page
+
+## Week 12
+
+### 4 December 2023
+* *2 hours* began working on the paper list page in ernest
+
+### 9 December 2023
+* *1 hour* more work on the paper list page 
+* *1 hour* split the paper list page into a seperate file
+
+### 10 December 2023
+* *2 hours* more work on the paper list page, got a basic skeleton working
