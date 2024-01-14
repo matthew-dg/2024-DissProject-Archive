@@ -178,3 +178,23 @@ Supervisor Name: Simon Fowler
 
 ### 10 December 2023
 * *2 hours* more work on the paper list page, got a basic skeleton working
+
+## Week 13
+
+### 11 December 2023
+* *2 hour* more work on the paper list page, now able to pull data from the database but having issues displaying it
+
+### 13 December 2023
+* *4 hours* Paper list page now working, more work done on the paper display page
+* *1.5 hours* Paper display page shows papers but not the authors yet
+* *2.5 hours* Paper display page now should show authors, still need to test it but can't as the paper submission page has a bug
+
+### 14 December 2023
+* *1.5 hours* status report
+* *2.5 hours* managed to test the paper display page, implemnted the review and comment tables in the database
+
+### 15 December 2023
+* *0.5 hours* meeting with supervisor
+
+### 19 December 2023
+* *1.5 hours* fixed the bug in the paper submission page, now able to test the paper display page and statrted on the review page

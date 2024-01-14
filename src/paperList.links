@@ -7,25 +7,20 @@ open import MvuCommands;
 #Model and Message definitions
 typename Author = (email: String, name: String, affiliation: String, idNum: Int);
 typename PaperResult = (title: String,
-    abstract: String, 
-    body: String, 
-    topic: String, 
-    conflicts: String, 
-    authors: [Author]);
+    paperid: Int,
+    topic: String);
 typename Filter = String;
-typename Model = (filterType: Filter, filterDesc: String, results: [(String, String)]);
+typename Model = (filterType: String, filterDesc: String, results: [PaperResult]);
 
 fun view(model) {
-  open MvuHTML;
-  open MvuAttrs;
+  var makerow = fun((result)) {
+     a(href("/displayPaper?paperId=" ^^ intToString(result.paperid)), textNode("Title: " ^^  result.title ^^ " Topic: " ^^ result.topic ^^ "\n"))  
+  };
 
-  var keylist =
-    MvuHTML.concatMap(fun((k, v)) { p(a0, textNode("Key: " ^^ k) +* textNode(" Value " ^^ v)) },
-            model.results);
-
-  div(a0, keylist) +*
-  p(a0, textNode("Filter by: "))
+  var keylist = MvuHTML.concatMap(makerow, model.results);
+  div(a0, keylist) 
 }
+# a(href("/home"), textNode("Title: " ^^ a ^^" Topic: " ^^ b)) 
 
 #Database
 var db = database "links";
@@ -33,8 +28,8 @@ var papers = table "papers" with (title : String, paperid : Int, abstract : Stri
 
 sig getInitialModel : () ~> Model
 fun getInitialModel() {
-  var allPapers = query flat { for (x <-- papers) [(a=x.title,b=x.paperid,c=x.abstract,d=x.body,e=x.topic,f=x.conflicts)] };
-  (filterType = "", filterDesc = "", results = [("Title", "Paper ID"), ("a test", "this")])
+  var allPapers = query flat { for (x <-- papers) [(title = x.title, paperid = x.paperid ,topic = x.topic)] };
+  (filterType = "", filterDesc = "", results = allPapers)
 }
 
 
