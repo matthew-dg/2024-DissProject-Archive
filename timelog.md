@@ -178,3 +178,14 @@ Supervisor Name: Simon Fowler
 
 ### 10 December 2023
 * *2 hours* more work on the paper list page, got a basic skeleton working
+
+## Semester 2
+
+## Week 0?
+
+### 6 January 2024
+* *1 hour* Left my laptop charger at home so setting up back up laptop
+* *1 hour* Looked at some of the resources for the dissertation
+
+### 7 January 2024
+* *1 hour* Downloaded the dissertation template and began on the introduction, also looked at some exemplar dissertations as well as other related papers
