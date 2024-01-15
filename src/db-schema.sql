@@ -23,3 +23,19 @@ CREATE TABLE papers(
     topic text NOT NULL,
     conflicts text NOT NULL
 );
+
+CREATE TABLE reviews(
+    reviewId SERIAL PRIMARY KEY,
+    paperId INT NOT NULL REFERENCES papers(paperId),
+    reviewerId INT NOT NULL REFERENCES users(userId),
+    rating INT CHECK (rating >= 1 AND rating <= 5) NOT NULL,
+    reviewText text NOT NULL
+);
+
+CREATE TABLE comments(
+    commentId SERIAL PRIMARY KEY,
+    paperId INT NOT NULL REFERENCES papers(paperId),
+    comenterId INT NOT NULL REFERENCES users(userId),
+    commentText text NOT NULL,
+    parentCommentId INT DEFAULT NULL REFERENCES comments(commentId)
+);

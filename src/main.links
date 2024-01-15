@@ -7,6 +7,7 @@ import Login;
 import Logout;
 import SubmitPaper;
 import PaperList;
+import PapersDisplay;
 
 fun main() {
 
@@ -16,6 +17,7 @@ fun main() {
     addRoute("/submitPaper", fun(_) { SubmitPaper.mainPage() });
     addRoute("/logout", fun(_) { Logout.mainPage() });
     addRoute("/PaperList", fun(_) { PaperList.mainPage() });
+    addRoute("/displayPaper", fun(_) { PapersDisplay.mainPage() });
     servePages()
 }
 

@@ -102,19 +102,24 @@ var noChildren = MvuHTML.empty;
 
 #Database
 var db = database "links";
-var papers = table "papers" with (title : String, abstract : String, body : String, topic : String, conflicts : String) from db;  
+var papers = table "papers" with (title : String, 
+  abstract : String, 
+  body : String, 
+  topic : String, 
+  conflicts : String, 
+  paperid : Int) where paperid readonly from db;  
 var userPaper = table "userPaper" with (useremail : String, paperid : Int, authororder: Int) from db;
 var users = table "users" with (email : String, name : String, password : String, id: Int) from db;
 
 
 sig insertPaper : (String, String, String, String, String, [Author]) ~> ()
 fun insertPaper(enteredTitle,enteredAbstract,enteredBody, enteredTopic, enteredConflicts, enteredAuthors) server {
+  var curentPaperId = insert papers values (title, abstract, body,topic,conflicts) [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)] returning paperid;
   var orderCounter = 0;
   var submisionInfo = for(a <- enteredAuthors) {
-    [(useremail = a.email, paperid = 0, authororder = orderCounter)]
+    [(useremail = a.email, paperid = curentPaperId, authororder = orderCounter)]
   };
-  insert userPaper values (useremail, authororder, paperid) submisionInfo;
-  insert papers values (title, abstract, body,topic,conflicts) [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)]
+  insert userPaper values (useremail, authororder, paperid) submisionInfo
 }
 
 

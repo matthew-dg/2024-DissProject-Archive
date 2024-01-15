@@ -5,29 +5,55 @@ open import MvuEvents;
 open import MvuCommands;
 
 typename Author = (email: String, name: String, affiliation: String, idNum: Int);
+typename Review = (userId: Int, review: String, score: Int);
 typename PaperInfo = (title: String,
     paperid: Int,
     abstract: String, 
     body: String, 
     topic: String, 
     conflicts: String, 
-    authors: [Author]);
+    authors: [String]);
 
-typename Model = Naybe(PaperInfo);
+typename Model = Maybe(PaperInfo);
 
 #Database
 
 var db = database "links";
 var papers = table "papers" with (title : String, paperid : Int, abstract : String, body : String, topic : String, conflicts : String) from db;
-var userPaperConnection = table "userPaper" with (email : String, name : String, affiliation : String, paperid : Int) from db;
+#Notice that table names must be lowercase, and column names must be lowercase
+var userPaperConnection = table "userpaper" with (useremail : String, paperid : Int, submissionId : Int, authorOrder : Int) from db;
+var reviews = table "reviews" with (useremail : String, paperid : Int, submissionId : Int, review : String, score : Int) from db;
+
+sig getModel : (Int) ~%~> Model
+fun getModel(paperid) {
+  var maybe = 
+    query nested { 
+      for (x <-- papers) 
+        where (x.paperid == paperid) 
+          [(a=x.title,
+          b=x.paperid,
+          c=x.abstract,
+          d=x.body,
+          e=x.topic,
+          f=x.conflicts,
+          g =
+            for (y <-- userPaperConnection)
+              where (y.paperid == paperid)
+                [y.useremail])] 
+    };
+  switch(maybe) {
+    case [] -> Nothing
+    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, body = x.d, topic = x.e, conflicts = x.f, authors = x.g))
+  }
+}
 
 
 sig getInitialModel : () ~%~> Model
 fun getInitialModel() {
-  switch(lookup("diseaseId", environment())) {
+  switch(lookup("paperId", environment())) {
     case Just(paperid) ->
       if (isInt(paperid)) {
-        getModel(stringToInt(diseaseId))
+        getModel(stringToInt(paperid))
       } else {
         Nothing
       }
@@ -35,40 +61,32 @@ fun getInitialModel() {
   }
 }
 
-sig getModel : (Int) ~%~> Model
-fun getModel(paperid) {
-  var maybe = query flat { for (x <-- papers) [(a=x.title,b=x.paperid,c=x.abstract,d=x.body,e=x.topic,f=x.conflicts)] where (x.paperid == paperid) };
-  switch(maybe) {
-    case [] -> Nothing
-    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, body = x.d, topic = x.e, conflicts = x.f, authors = []))
-  }
+fun viewModel(model) {
+  var makerow = fun((author)) {
+     p(a0, textNode("Email: " ^^ author))
+  };
+  var keylist = MvuHTML.concatMap(makerow, model.authors);
+
+  div(a0, textNode("Title: " ^^ model.title)) +*
+  div(a0, textNode("Abstract: " ^^ model.abstract)) +*
+  div(a0, textNode("Body: " ^^ model.body)) +*
+  div(a0, textNode("Topic: " ^^ model.topic)) +*
+  div(a0, textNode("Conflicts: " ^^ model.conflicts)) +*
+  div(a0, keylist) 
 }
 
-fun view(model) {
-
-    open MvuHTML;
-
-    open MvuAttrs;
- 
-    var keylist =
-
-        MvuHTML.concatMap(fun((k, v)) { p(a0, textNode("Key: " ^^ k) +* textNode(" Value " ^^ v)) },
-
-                model);
- 
+#sig view : Maybe(Model) ~> MvuHTML.HTML(_)
+fun view(model) { 
   switch(model) {
     case Just(model) -> viewModel(model)
-    case Nothing -> textNode("Disease not found.")
+    case Nothing -> textNode("Paper not found.")
   }
 
 }
 
 fun mainPage() {
-
-    var initialModel = ("hello", "");
-
-    Mvu.runSimple("placeholder", initialModel, view, fun(_, _) { initialModel });
-
+    Mvu.runStatic("placeholder", getInitialModel(), view);
+    print("hello");
     page
 
 <html>
