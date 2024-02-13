@@ -5,16 +5,21 @@ open import MvuEvents;
 open import MvuCommands;
 
 typename Author = (email: String, name: String, affiliation: String, idNum: Int);
-typename Review = (userId: Int, review: String, score: Int);
+typename Comment = (comment: String, author: [String], parentId: Int, id: Int);
+typename NestedComment = (parentObject: Comment , children: [Comment]);
 typename PaperInfo = (title: String,
     paperid: Int,
     abstract: String, 
     body: String, 
     topic: String, 
     conflicts: String, 
-    authors: [String]);
+    authors: [String],
+    currentComment: String,
+    comments: [NestedComment],
+    currentReply: String);
 
 typename Model = Maybe(PaperInfo);
+typename Message = [| UpdateComment:String | TrySubmit:Int | DeliverResult |];
 
 #Database
 
@@ -22,7 +27,14 @@ var db = database "links";
 var papers = table "papers" with (title : String, paperid : Int, abstract : String, body : String, topic : String, conflicts : String) from db;
 #Notice that table names must be lowercase, and column names must be lowercase
 var userPaperConnection = table "userpaper" with (useremail : String, paperid : Int, submissionId : Int, authorOrder : Int) from db;
-var reviews = table "reviews" with (useremail : String, paperid : Int, submissionId : Int, review : String, score : Int) from db;
+var comments = table "comments" with (paperid : Int, comenterid: Int, commenttext : String, parentcommentid: Int, commentid: Int) where commentid readonly from db;
+var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+
+sig insertComment : (Int, String, Int) ~> ()
+fun insertComment(givenPaperId,enteredComment,parent) server {
+  var curentUser = getCookie("currentUser");
+  insert comments values (paperid, comenterid, commenttext, parentcommentid) [(paperid = givenPaperId, comenterid = stringToInt(curentUser), commenttext = enteredComment, parentcommentid = parent)]
+}
 
 sig getModel : (Int) ~%~> Model
 fun getModel(paperid) {
@@ -41,9 +53,27 @@ fun getModel(paperid) {
               where (y.paperid == paperid)
                 [y.useremail])] 
     };
+  var rawComments = 
+    query nested {
+      for (x <-- comments)
+        where (x.paperid == paperid)
+          [(comment=x.commenttext, parentId = x.parentcommentid, id = x.commentid,
+          author = 
+            (for (y <-- users)
+              where (y.userid == x.comenterid)
+                [y.email]))]
+    };
+
+  var nestedComments = 
+    for (c <- rawComments) where (c.parentId == 0)
+      [(parentObject = c, children =
+        for (d <- rawComments) where (d.parentId == c.id) 
+          [d]
+      )];
+
   switch(maybe) {
     case [] -> Nothing
-    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, body = x.d, topic = x.e, conflicts = x.f, authors = x.g))
+    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, body = x.d, topic = x.e, conflicts = x.f, authors = x.g, currentComment = "", comments = nestedComments, currentReply = ""))
   }
 }
 
@@ -65,14 +95,40 @@ fun viewModel(model) {
   var makerow = fun((author)) {
      p(a0, textNode("Email: " ^^ author))
   };
-  var keylist = MvuHTML.concatMap(makerow, model.authors);
+  var authorlist = MvuHTML.concatMap(makerow, model.authors);
+  
+#typename NestedComment = (parentObject: Comment , children: [Comment]);
+  var makeSingleComment = fun((comment)) {
+    print(comment.comment);
+      p(a0, textNode(hd(comment.author) ^^ " : " ^^ comment.comment))
+    };
 
-  div(a0, textNode("Title: " ^^ model.title)) +*
-  div(a0, textNode("Abstract: " ^^ model.abstract)) +*
-  div(a0, textNode("Body: " ^^ model.body)) +*
-  div(a0, textNode("Topic: " ^^ model.topic)) +*
-  div(a0, textNode("Conflicts: " ^^ model.conflicts)) +*
-  div(a0, keylist) 
+  var makeComment = fun((nestedComment)) {
+    var parent = makeSingleComment(nestedComment.parentObject);
+    var childlist = MvuHTML.concatMap(makeSingleComment, nestedComment.children);
+    p(a0, parent) +*
+    form(a0,
+      input(type("text") +@ placeholder("Reply") +@ name("reply") +@ onInput(fun(str) { UpdateComment(str) }), h0) +*
+      button(onClick(fun() { TrySubmit(nestedComment.parentObject.id) }), textNode("Reply"))) +*
+    p(a0, childlist) +* br(a0, h0)
+  };
+  
+  var commentlist = MvuHTML.concatMap(makeComment, model.comments);
+  a(href("/reviews?paperId=" ^^ intToString(model.paperid)), textNode("Review")) +* 
+  a(href("/PaperList"), textNode("Papers")) +*
+  p(a0, textNode("Title: " ^^ model.title)) +*
+  p(a0, textNode("Abstract: " ^^ model.abstract)) +*
+  p(a0, textNode("Body: " ^^ model.body)) +*
+  p(a0, textNode("Topic: " ^^ model.topic)) +*
+  p(a0, textNode("Conflicts: " ^^ model.conflicts)) +*
+  p(a0, authorlist) +*
+  h1(a0, textNode("Comments")) +*
+  p(a0, commentlist) +*
+  form(a0,
+    input(type("text") +@ placeholder("Comment") +@ name("comment") +@ onInput(fun(str) { UpdateComment(str) }), h0) +*
+    button(onClick(fun() { TrySubmit(0) }), textNode("Submit"))
+    ) +*
+  button(onClick(fun() { TrySubmit(0) }), textNode("Submit"))  
 }
 
 #sig view : Maybe(Model) ~> MvuHTML.HTML(_)
@@ -81,12 +137,29 @@ fun view(model) {
     case Just(model) -> viewModel(model)
     case Nothing -> textNode("Paper not found.")
   }
+}
 
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+  fun updtModel(model) {
+    switch(msg) {
+      case UpdateComment(txt) -> ((model with currentComment = txt), MvuCommands.empty)
+      case TrySubmit(id) -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(insertComment(model.paperid, model.currentComment, id)) }))
+      case DeliverResult -> 
+        redirect("/displayPaper?paperId=" ^^ intToString(model.paperid));
+        (model, MvuCommands.empty)
+    }
+  }
+  switch(model) {
+    case Just(model) -> 
+      var (updatedModel, cmd) = updtModel(model);
+      (Just(updatedModel), cmd)
+    case Nothing -> (Nothing, MvuCommands.empty)
+  }
 }
 
 fun mainPage() {
-    Mvu.runStatic("placeholder", getInitialModel(), view);
-    print("hello");
+    Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty);
     page
 
 <html>

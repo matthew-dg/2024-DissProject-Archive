@@ -1,0 +1,113 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+import Common;
+
+#Model and Message definitions
+typename ReviewInfo = (paperid: Int, reviewerId: Int, rating: Int, reviewtext: String, abstract: String, submit: Bool);
+typename Message = [| UpdateScore:String | UpdateReviewText:String | TrySubmit | DeliverResult |];
+typename Model = Maybe(ReviewInfo);
+
+#Database
+var db = database "links";
+var reviews = table "reviews" with (paperid : Int, reviewerid : Int, rating : Int, reviewtext : String) from db;
+var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+var papers = table "papers" with (title : String, 
+  abstract : String, 
+  body : String, 
+  topic : String, 
+  conflicts : String, 
+  paperid : Int) where paperid readonly from db; 
+
+sig insertReview : (Int, Int, Int, String) ~> ()
+fun insertReview(paperid, reviewerid, rating, reviewtext) server {
+  print("inserting review");
+  insert reviews values (paperid, reviewerid, rating, reviewtext) [(paperid = paperid, reviewerid = reviewerid, rating = rating, reviewtext = reviewtext)]
+}
+
+sig getModel : (Int) ~%~> Model
+fun getModel(paperid) {
+  var curentUser = Common.getUserFromCookie(getCookie("currentUser")).userid;
+  
+    #getCookie("currentUser");
+  var maybe = 
+    query nested { 
+      for (x <-- papers) 
+        where (x.paperid == paperid) 
+          [(a=x.paperid,b=x.abstract)] 
+    };
+  switch(maybe) {
+    case [] -> Nothing
+    case [x] -> Just((paperid = x.a, reviewerId = curentUser, rating = 0, reviewtext = "", abstract = x.b, submit = false))
+  }
+}
+
+sig getInitialModel : () ~%~> Model
+fun getInitialModel() {
+  switch(lookup("paperId", environment())) {
+    case Just(paperid) ->
+      if (isInt(paperid)) {
+        getModel(stringToInt(paperid))
+      } else {
+        Nothing
+      }
+    case Nothing -> Nothing
+  }
+}
+
+fun viewModel(model) {
+  a(href("/displayPaper?paperId=" ^^ intToString(model.paperid)), textNode("Back to paper.")) +*
+  p(a0, textNode("Abstract: " ^^ model.abstract)) +*
+   form(a0,
+    input(type("text") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateReviewText(str) }), h0) +*
+    input(type("text") +@ placeholder("Name") +@ name("name") +@ onInput(fun(str) { UpdateScore(str) }), h0) +*
+    button(onClick(fun() { TrySubmit }), textNode("Sign Up"))
+    )
+}
+
+fun view(model) { 
+  switch(model) {
+    case Just(model) -> viewModel(model)
+    case Nothing -> textNode("Paper not found.")
+  }
+}
+
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+  fun updtModel(model) {
+    switch(msg) {
+      case UpdateScore(txt) -> ((model with rating = stringToInt(txt)), MvuCommands.empty)
+      case UpdateReviewText(txt) -> ((model with reviewtext = txt), MvuCommands.empty)
+      case TrySubmit ->
+        var cmd =
+          MvuCommands.spawnProc(fun() { DeliverResult(insertReview(model.paperid, model.reviewerId, model.rating, model.reviewtext)) });
+        (model, cmd)
+      case DeliverResult -> ((model with submit = true), MvuCommands.empty)
+    }
+  }
+  switch(model) {
+    case Just(model) -> 
+      var (updatedModel, cmds) = updtModel(model);
+      (Just(updatedModel), cmds)
+    case Nothing -> (Nothing, MvuCommands.empty)
+  }
+}
+
+fun mainPage() {
+    Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty);
+    page
+
+<html>
+
+<body>
+
+<div id="placeholder"></div>
+
+</body>
+
+</html>
+
+}
+

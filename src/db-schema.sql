@@ -37,5 +37,7 @@ CREATE TABLE comments(
     paperId INT NOT NULL REFERENCES papers(paperId),
     comenterId INT NOT NULL REFERENCES users(userId),
     commentText text NOT NULL,
-    parentCommentId INT DEFAULT NULL REFERENCES comments(commentId)
+    parentCommentId INT DEFAULT 0 REFERENCES comments(commentId)
 );
+
+INSERT INTO comments(commentId,paperId, comenterId, commentText,parentCommentId) VALUES (13,40, 1, 'This is a reply',8);

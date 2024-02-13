@@ -211,3 +211,49 @@ Supervisor Name: Simon Fowler
 ### 7 January 2024
 * *1 hour* Downloaded the dissertation template and began on the introduction, also looked at some exemplar dissertations as well as other related papers
 * *1 hour* Looked at more related papers 
+
+## Week 1
+
+### 12 January 2024
+* *0.5 hours* meeting with supervisor
+
+### 14 January 2024
+* *2 hours* done more work on review page, done a redesign of how its gonna work
+* *6 hours* review page close to working, just need to figure out some type issues
+
+## Week 2
+
+### 20 January 2024
+* *2.5 hours* review page not working, still need to figure out the type issues 
+
+### 21 January 2024
+* *7.5 hours* review submission now working, still need to add the ability to edit reviews and work out the flow for that, comments can now be submitted, still need to display them
+
+## Week 3
+
+### 28 January 2024
+* *5 hours* Dealt with a type error casued by side effects
+* *5 hours* Top level comments now working, still need to add the ability to reply to comments
+
+## Week 4
+
+### 2 February 2024
+* *0.5 hour* meeting with supervisor
+
+### 3 February 2024
+* *7 hours* Comments can now be replied to, still need to add the ability to edit and delete comments
+
+### 4 Feburary 
+* *2 hours* Fixed some issues with comments, now need to add the ability to edit and delete them, also added css with bootstrap
+
+## Week 5
+
+### 9 February 2024
+* *0.5 hours* meeting with supervisor
+
+### 10 February 2024
+* *2 hours* CSS issues still unresolved 
+
+### 11 February 2024
+* *2 hours* fixed bug with logins 
+* *6 hours* Review pages online

@@ -1,0 +1,86 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+open import MvuEvents;
+open import MvuCommands;
+import Common;
+
+#Model and Message definitions 
+typename ReviewInfo = (reviewerId: Int, rating: Int, reviewText: String);
+typename FullModel= (paperId: Int, reviews: [ReviewInfo], paperTitle: String, curentUser: Int);
+typename Model = Maybe(FullModel);
+
+#Database
+var db = database "links";
+var reviews = table "reviews" with (paperid : Int, reviewerid : Int, rating : Int, reviewtext : String) from db;
+var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+var papers = table "papers" with (title : String, abstract : String, body : String, topic : String, conflicts : String, paperid : Int) where paperid readonly from db;
+
+sig getModel : (Int) ~%~> Model
+fun getModel(paperid) {
+  var review = 
+    query {
+      for (x <-- reviews)
+        where (x.paperid == paperid)
+          [(reviewerId=x.reviewerid, rating=x.rating, reviewText=x.reviewtext)]
+    };
+  #reviewExists = if(len(review) > 0) {true} else {false};
+
+  var curentUser = Common.getUserFromCookie(getCookie("currentUser"));
+  var realatedPaper = 
+    query nested { 
+      for (x <-- papers) 
+        where (x.paperid == paperid) 
+          [(a=x.title, b=x.paperid)] 
+    };
+  switch(realatedPaper) {
+    case [] -> Nothing
+    case [x] -> Just((paperId = paperid, reviews = review , paperTitle = hd(realatedPaper).a ,curentUser = curentUser.userid))
+  }
+}
+
+sig getInitialModel : () ~%~> Model
+fun getInitialModel() {
+  switch(lookup("paperId", environment())) {
+    case Just(paperid) ->
+      if (isInt(paperid)) {
+        getModel(stringToInt(paperid))
+      } else {
+        Nothing
+      }
+    case Nothing -> Nothing
+  } 
+}
+
+fun viewModel(model) {
+  var makeSingleReview = fun(rev) {
+    p(a0,textNode("Rating: " ^^ intToString(rev.rating))) +*
+    p(a0,textNode("Review: " ^^ rev.reviewText)) +*
+    p(a0,textNode("Reviewer: " ^^ intToString(rev.reviewerId)))
+  };
+  
+  var reviewList = concatMap(makeSingleReview, model.reviews);
+  a(href("/submitReview?paperId=" ^^ intToString(model.paperId)), textNode("Submit Review")) +*
+  h1(a0,textNode("Reviews for " ^^ model.paperTitle)) +*
+  div(a0,reviewList)
+}
+
+fun view(model) { 
+  switch(model) {
+    case Just(model) -> viewModel(model)
+    case Nothing -> textNode("Paper not found.")
+  }
+}
+
+fun mainPage() {
+  var loggedIn = getCookie("currentUser") <> "";
+  if (loggedIn) {
+    ()
+  } else {
+    redirect("/login")
+  };
+  Mvu.runStatic("placeholder", getInitialModel(), view);
+  page
+       <div id = "placeholder"></div>
+  
+}

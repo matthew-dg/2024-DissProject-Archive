@@ -7,15 +7,30 @@ import HomePage;
 
 typename Model = (email: String, password: String, loginSuccess:Bool);
 
-typename Message = [| DeliverResult:Bool | TryLogin | UpdateEmail:String | UpdatePassword:String |];
+typename Message = [| DeliverResult:String | TryLogin | UpdateEmail:String | UpdatePassword:String |];
 
 sig initialModel : Model
 var initialModel = (email = "", password = "", loginSuccess = false);
 
+#Database
+var db = database "links";
+var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+
 #placeholder till real authentication is implemented
-sig validAuth : (String, String) -> Bool
-fun validAuth(email, pass) {
-  email == "2571284d@student.gla.ac.uk" && pass == "Blah"
+sig validAuth : (String, String) ~> String
+fun validAuth(email, pass) server {
+   if (email == "2571284d@student.gla.ac.uk" && pass == "Blah") {
+    var curentUser = email;
+    var userid = 
+      query {
+        for (x <-- users)
+          where (x.email == curentUser)
+            [(a=x.userid)]
+      };
+    intToString(hd(userid).a)
+    } else {
+      ""
+    }
 }
 
 sig view : (Model) ~> MvuHTML.HTML(Message)
@@ -24,9 +39,9 @@ fun view(model) {
   form(a0,
     input(type("email") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateEmail(str) }), h0) +*
     input(type("password") +@ placeholder("Password") +@ name("password") +@ onInput(fun(str) { UpdatePassword(str) }), h0) +*
-    button(onClick(fun() { TryLogin }), textNode("Sign Up")) 
+    button(onClick(fun() { TryLogin }), textNode("Log In")) 
     ) +*
-    a(href("/signup"), textNode("Sign Up"))
+    a(href("/signup"), textNode("Sign Up")) 
     }
 
 sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
@@ -37,13 +52,13 @@ fun updt(msg, model) {
         MvuCommands.spawnProc(fun() { DeliverResult(validAuth(model.email, model.password)) });
       ((model with loginSuccess = false), cmd)
     case DeliverResult(correct) -> 
-      var home = if (correct) {
-        setCookie("currentUser", model.email);
-        redirect("/")
+      if (correct <> "") {
+          setCookie("currentUser", correct);
+          redirect("/")
       } else {
-        setCookie("curentUser", "")
+        setCookie("currentUser", "")
       };
-    ((model with loginSuccess = correct), MvuCommands.empty)
+    ((model with loginSuccess = true), MvuCommands.empty)
     case UpdateEmail(txt) -> ((model with email = txt), MvuCommands.empty)
     case UpdatePassword(txt) -> ((model with password = txt), MvuCommands.empty)
   }
@@ -51,6 +66,8 @@ fun updt(msg, model) {
 
 
 fun mainPage() {
+  setCookie("currentUser", "");
+  print(getCookie("currentUser"));
     var loggedIn = getCookie("currentUser") <> "";
     if (loggedIn) {
         redirect("/")

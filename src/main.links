@@ -8,6 +8,8 @@ import Logout;
 import SubmitPaper;
 import PaperList;
 import PapersDisplay;
+import SubmitReview;
+import ReviewsDisplay;
 
 fun main() {
 
@@ -18,6 +20,9 @@ fun main() {
     addRoute("/logout", fun(_) { Logout.mainPage() });
     addRoute("/PaperList", fun(_) { PaperList.mainPage() });
     addRoute("/displayPaper", fun(_) { PapersDisplay.mainPage() });
+    addRoute("/submitReview", fun(_) { SubmitReview.mainPage() });
+    addRoute("/home", fun(_) { HomePage.mainPage() });
+    addRoute("/reviews", fun(_) { ReviewsDisplay.mainPage() });
     servePages()
 }
 

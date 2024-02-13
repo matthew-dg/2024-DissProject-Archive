@@ -1,22 +1,32 @@
 import Mvu;
 import MvuHTML;
 import MvuAttrs;
+import Common;
+
 
 typename Model = (text: String, counter: Int, dataText: String, userEmail: String);
 
-typename Msg = [| UpdateText:String | IncrCounter | Pull |];
+typename Msg = [| UpdateText:String | IncrCounter |];
 
 sig initialModel : Model
 var initialModel = (text = "", counter = 0, dataText = "Nout", userEmail = "");
 
+#Database
 var db = database "links";
-var users = table "users" with (email : String, name : String, password : String) from db;
-var maybe = query flat { for (x <-- users) [(a=x.email,b=x.name,c=x.password)] };
+var users = table "users" with (email : String, name : String, userid : Int, afiliation : String, pcmember : Bool, admin : Bool) from db;
+
+sig getInitialModel : (String) ~> Model
+fun getInitialModel(userId) server {
+    var user = Common.getUserFromCookie(userId);
+    (initialModel with userEmail = (user).email)
+}
 
 sig view : (Model) ~> MvuHTML.HTML(Msg)
 fun view(model) {
     open MvuHTML;
     open MvuAttrs;
+
+    Common.viewHeader() +*
 
     p(a0, textNode(model.userEmail)) +*
     input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
@@ -24,7 +34,6 @@ fun view(model) {
     p(a0, textNode(show(model.counter))) +*
     p(a0, textNode(model.dataText)) +*
     button(onClick(fun() { IncrCounter }), textNode("Increment")) +*
-    button(onClick(fun() { Pull }), textNode("Pull")) +*
     a(href("/signup"), textNode("Sign Up")) +*
     a(href("/login"), textNode("Log In")) +*
     a(href("/logout"), textNode("Logout")) +*
@@ -38,7 +47,6 @@ fun updt(msg, model) {
         case UpdateText(txt) -> 
             (model with text = txt)
         case IncrCounter -> (model with counter = model.counter + 1)
-        case Pull -> (model with dataText = hd(maybe).b)
     }
 }
 
@@ -53,9 +61,8 @@ fun mainPage() {
         redirect("/login")
     };
 
-    var sendModel = (initialModel with userEmail = user);
+    var sendModel = getInitialModel(user);
 
     Mvu.runSimple("placeholder", sendModel, view, updt);
-    page
-        <div id = "placeholder"></div>
+    Common.template()
 }

@@ -14,7 +14,7 @@ typename Model = (filterType: String, filterDesc: String, results: [PaperResult]
 
 fun view(model) {
   var makerow = fun((result)) {
-     a(href("/displayPaper?paperId=" ^^ intToString(result.paperid)), textNode("Title: " ^^  result.title ^^ " Topic: " ^^ result.topic ^^ "\n"))  
+     a(href("/displayPaper?paperId=" ^^ intToString(result.paperid)), textNode("Title: " ^^  result.title ^^ " Topic: " ^^ result.topic))  
   };
 
   var keylist = MvuHTML.concatMap(makerow, model.results);
