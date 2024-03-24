@@ -1,0 +1,31 @@
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
+
+#Model and Message definitions
+typename Model = String;
+typename Message = [| UpdateString: String |];
+
+#View
+fun view(model) {
+  div(a0,input(type("text") +@ placeholder("Hi") +@ onInput(fun(str) { UpdateString(str) }), h0) +* textNode(model)
+  )
+}
+
+#Update
+fun updt(msg, model) {
+    switch (msg) {
+        case UpdateString(str) -> str
+    }
+}
+
+fun mainPage() {
+    Mvu.runSimple("placeholder", "", view, updt);
+    page
+    <html>
+        <body>
+            <div id="placeholder"></div>
+        </body>
+    </html>
+    }
+    

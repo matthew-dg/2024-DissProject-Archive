@@ -257,3 +257,104 @@ Supervisor Name: Simon Fowler
 ### 11 February 2024
 * *2 hours* fixed bug with logins 
 * *6 hours* Review pages online
+
+## Week 6
+
+### 15 February 2024
+* *2 hours* work on css
+
+### 16 February 2024
+* *0.5 hours* meeting with supervisor
+
+### 18 February 2024
+* *6 hours* home page revamped, more work on css
+* *2 Hours* Began work on admin page
+
+## Week 7
+
+### 22 February 2024
+* *3.5 hours* Basic admin page now working 
+
+### 23 February 2024
+* *0.5 hours* meeting with supervisor
+
+### 25 February 2024
+* *6.5 hours* Began overhailing reviews to allow assiging of reviews to users
+
+## Week 8 
+
+### 28 February 2024
+* *4 hours* Found issue with comments and fixed it 
+
+### 1 March 2024
+* *0.5 hours* meeting with supervisor
+* *5 hours* changed assigmnents again to allow for multiple reviews per user
+
+### 2 March 2024
+* *4 hours* more work on the above, having major issues getting the dropdown to work
+
+## Week 9
+
+### 7 March 2024
+* *3 hours* Started writing more of the introduction for the dissertation
+
+### 8 March 2024
+* *0.5 hours* meeting with supervisor
+* *5 hours* Fixed the issue, new assigments now working
+
+### 9 March 2024
+* *2 hours* Dose having writers block count as work?
+* *3 hours* More work on the introduction
+
+### 10 March 2024
+* *2 hours* More work on the introduction, almost there
+
+## Week 10
+
+### 11 March 2024
+* *1 hour* introduction now done
+
+### 12 March 2024
+* *3 hours* began work on the background section
+
+### 13 March 2024
+* *2 hours* more work on the background section
+
+### 14 March 2024
+* *3 hours* more work on the background section
+
+### 15 March 2024
+* *0.5 hours* meeting with supervisor
+* *3 hours* finished the background section
+
+### 16 March 2024
+* *2 hours* began work on the requirements section
+
+### 17 March 2024
+* *1 hour* more work on the requirements section
+
+## Week 11
+
+### 18 March 2024
+* *2 hours* updated css
+
+### 19 March 2024
+* *2 hours* more work on the requirements section, laptop broke so had to go home and and get a backup laptop
+
+### 21 March 2024
+* *2 hours* finished the requirements section
+* *3 hours* began work on the design section
+
+### 22 March 2024
+* *3 hours* also began work on the implementation section
+* *3 hours* more work on the implementation section
+* *2 hours* more work on the design section
+* *0.5 hours* meeting with supervisor
+* *2 hours* more work on the design section
+* *2 hours* began work on the evaluation section
+
+### 23 March 2024
+ * *2 hours* more work on the evaluation section, missed the deadline cuase of the laptop breaking, which is always great
+
+### 24 March 2024
+* *12 hours* finished all the sections, its done 

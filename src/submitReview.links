@@ -6,13 +6,13 @@ open import MvuCommands;
 import Common;
 
 #Model and Message definitions
-typename ReviewInfo = (paperid: Int, reviewerId: Int, rating: Int, reviewtext: String, abstract: String, submit: Bool);
+typename ReviewInfo = (abstract : String, assignmentid : Int, paperid: Int ,rating : Int, reviewtext : String, submit:Bool);
 typename Message = [| UpdateScore:String | UpdateReviewText:String | TrySubmit | DeliverResult |];
 typename Model = Maybe(ReviewInfo);
 
 #Database
 var db = database "links";
-var reviews = table "reviews" with (paperid : Int, reviewerid : Int, rating : Int, reviewtext : String) from db;
+var reviews = table "reviews" with (assignmentid : Int, rating : Int, reviewtext : String) from db;
 var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
 var papers = table "papers" with (title : String, 
   abstract : String, 
@@ -20,11 +20,15 @@ var papers = table "papers" with (title : String,
   topic : String, 
   conflicts : String, 
   paperid : Int) where paperid readonly from db; 
+var reviewassignments = table "reviewassignments" with (paperid : Int, reviewerid : Int, assignmentid : Int, completed : Bool) from db;
 
-sig insertReview : (Int, Int, Int, String) ~> ()
-fun insertReview(paperid, reviewerid, rating, reviewtext) server {
+sig insertReview : (Int, Int, String) ~> ()
+fun insertReview(assignmentid, rating, reviewtext) server {
   print("inserting review");
-  insert reviews values (paperid, reviewerid, rating, reviewtext) [(paperid = paperid, reviewerid = reviewerid, rating = rating, reviewtext = reviewtext)]
+  insert reviews values (assignmentid, rating, reviewtext) [(assignmentid = assignmentid, rating = rating, reviewtext = reviewtext)];
+  update (x <-- reviewassignments)
+    where (x.assignmentid == assignmentid) 
+      set (completed = true) 
 }
 
 sig getModel : (Int) ~%~> Model
@@ -32,6 +36,13 @@ fun getModel(paperid) {
   var curentUser = Common.getUserFromCookie(getCookie("currentUser")).userid;
   
     #getCookie("currentUser");
+  var assign = 
+    query { 
+      for (x <-- reviewassignments) 
+        where (x.paperid == paperid && x.reviewerid == curentUser) 
+          [(a=x.assignmentid)]
+    };
+
   var maybe = 
     query nested { 
       for (x <-- papers) 
@@ -40,7 +51,7 @@ fun getModel(paperid) {
     };
   switch(maybe) {
     case [] -> Nothing
-    case [x] -> Just((paperid = x.a, reviewerId = curentUser, rating = 0, reviewtext = "", abstract = x.b, submit = false))
+    case [x] -> Just((assignmentid = hd(assign).a, paperid = x.a ,rating = 0, reviewtext = "", abstract = x.b, submit = false))
   }
 }
 
@@ -57,16 +68,21 @@ fun getInitialModel() {
   }
 }
 
+sig viewModel : (ReviewInfo) ~> MvuHTML.HTML(Message)
 fun viewModel(model) {
+  Common.viewHeader() +*
   a(href("/displayPaper?paperId=" ^^ intToString(model.paperid)), textNode("Back to paper.")) +*
   p(a0, textNode("Abstract: " ^^ model.abstract)) +*
-   form(a0,
-    input(type("text") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateReviewText(str) }), h0) +*
-    input(type("text") +@ placeholder("Name") +@ name("name") +@ onInput(fun(str) { UpdateScore(str) }), h0) +*
+   form(class("paper-form"),
+    label(for_("Review"), textNode("Review Text")) +*
+    textarea(placeholder("Review Text") +@ name("Review Text") +@id("Review") +@ onInput(fun(str) { UpdateReviewText(str) }), h0) +*
+    label(for_("rating"), textNode("Rating")) +*
+    input(type("text") +@ placeholder("Rating") +@ name("Rating") +@ onInput(fun(str) { UpdateScore(str) }), h0) +*
     button(onClick(fun() { TrySubmit }), textNode("Sign Up"))
     )
 }
 
+sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) { 
   switch(model) {
     case Just(model) -> viewModel(model)
@@ -82,9 +98,11 @@ fun updt(msg, model) {
       case UpdateReviewText(txt) -> ((model with reviewtext = txt), MvuCommands.empty)
       case TrySubmit ->
         var cmd =
-          MvuCommands.spawnProc(fun() { DeliverResult(insertReview(model.paperid, model.reviewerId, model.rating, model.reviewtext)) });
+          MvuCommands.spawnProc(fun() { DeliverResult(insertReview(model.assignmentid, model.rating, model.reviewtext)) });
         (model, cmd)
-      case DeliverResult -> ((model with submit = true), MvuCommands.empty)
+      case DeliverResult -> 
+        redirect("/displayPaper?paperId=" ^^ intToString(model.paperid));
+        ((model with submit = true), MvuCommands.empty)
     }
   }
   switch(model) {
@@ -97,17 +115,7 @@ fun updt(msg, model) {
 
 fun mainPage() {
     Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty);
-    page
-
-<html>
-
-<body>
-
-<div id="placeholder"></div>
-
-</body>
-
-</html>
+    Common.template()
 
 }
 

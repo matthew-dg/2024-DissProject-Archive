@@ -12,18 +12,19 @@ typename Model = Maybe(FullModel);
 
 #Database
 var db = database "links";
-var reviews = table "reviews" with (paperid : Int, reviewerid : Int, rating : Int, reviewtext : String) from db;
+var reviews = table "reviews" with (assignmentid: Int, rating : Int, reviewtext : String) from db;
 var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
 var papers = table "papers" with (title : String, abstract : String, body : String, topic : String, conflicts : String, paperid : Int) where paperid readonly from db;
+var assignments = table "reviewassignments" with (paperid : Int, reviewerid : Int, assignmentid : Int, completed : Bool) where assignmentid readonly from db;
 
 sig getModel : (Int) ~%~> Model
 fun getModel(paperid) {
-  var review = 
-    query {
-      for (x <-- reviews)
-        where (x.paperid == paperid)
-          [(reviewerId=x.reviewerid, rating=x.rating, reviewText=x.reviewtext)]
-    };
+  var review = query nested {
+    for (x <-- assignments) 
+      for (y <-- reviews)
+        where (x.paperid == paperid && x.assignmentid == y.assignmentid)
+          [(reviewerId = x.reviewerid, rating = y.rating, reviewText = y.reviewtext)]
+  };
   #reviewExists = if(len(review) > 0) {true} else {false};
 
   var curentUser = Common.getUserFromCookie(getCookie("currentUser"));
@@ -60,6 +61,7 @@ fun viewModel(model) {
   };
   
   var reviewList = concatMap(makeSingleReview, model.reviews);
+  Common.viewHeader() +*
   a(href("/submitReview?paperId=" ^^ intToString(model.paperId)), textNode("Submit Review")) +*
   h1(a0,textNode("Reviews for " ^^ model.paperTitle)) +*
   div(a0,reviewList)
@@ -80,7 +82,5 @@ fun mainPage() {
     redirect("/login")
   };
   Mvu.runStatic("placeholder", getInitialModel(), view);
-  page
-       <div id = "placeholder"></div>
-  
+  Common.template()
 }

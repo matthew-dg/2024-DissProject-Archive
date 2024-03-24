@@ -3,6 +3,7 @@ open import MvuHTML;
 open import MvuAttrs;
 open import MvuEvents;
 open import MvuCommands;
+import Common;
 
 #Model and Message definitions
 typename Author = (email: String, name: String, affiliation: String, idNum: Int);
@@ -14,11 +15,12 @@ typename Model = (filterType: String, filterDesc: String, results: [PaperResult]
 
 fun view(model) {
   var makerow = fun((result)) {
-     a(href("/displayPaper?paperId=" ^^ intToString(result.paperid)), textNode("Title: " ^^  result.title ^^ " Topic: " ^^ result.topic))  
+     a(href("/displayPaper?paperId=" ^^ intToString(result.paperid)), textNode("Title: " ^^  result.title ^^ " Topic: " ^^ result.topic) +* br(a0,h0) +* br(a0,h0))  
   };
 
   var keylist = MvuHTML.concatMap(makerow, model.results);
-  div(a0, keylist) 
+  Common.viewHeader() +*
+  div(class("content"), keylist) 
 }
 # a(href("/home"), textNode("Title: " ^^ a ^^" Topic: " ^^ b)) 
 
@@ -36,6 +38,5 @@ fun getInitialModel() {
 fun mainPage() {
   var initialModel = getInitialModel();
   Mvu.runStatic("placeholder", initialModel, view);
-      page
-        <div id = "placeholder"></div>
+  Common.template()
 }

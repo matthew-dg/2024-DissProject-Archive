@@ -3,6 +3,7 @@ open import MvuHTML;
 open import MvuAttrs;
 open import MvuEvents;
 open import MvuCommands;
+import Common;
 
 var db = database "links";
 var users = table "users" with (email : String, name : String, password : String) from db;
@@ -21,6 +22,7 @@ fun insertUser(enteredEmail,enteredName,enteredPassword) server {
 sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
 
+  Common.viewHeader() +*
   form(a0,
     input(type("email") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateEmail(str) }), h0) +*
     input(type("text") +@ placeholder("Name") +@ name("name") +@ onInput(fun(str) { UpdateName(str) }), h0) +*
@@ -28,7 +30,6 @@ fun view(model) {
     button(onClick(fun() { TrySignUp }), textNode("Sign Up"))
     ) +*
 
-    p(a0, textNode("WASSSUP")) +*
     a(href("/login"), textNode("Log In"))
 }
 
@@ -55,6 +56,5 @@ fun mainPage() {
     };
 
   Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
-    page
-        <div id = "placeholder"></div>
+  Common.template()
 }

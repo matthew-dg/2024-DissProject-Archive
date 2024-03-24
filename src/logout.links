@@ -21,11 +21,8 @@ fun view(model) {
         "You have been logged out"
     };
 
-    p(a0, textNode(loggedIn)) +*
-    a(href("/"), textNode("Home")) +*
-    a(href("/signup"), textNode("Sign Up")) +*
-    a(href("/login"), textNode("Login"))
-    
+    Common.viewHeader() +*
+    p(a0, textNode(loggedIn)) 
     
 
 }
@@ -40,6 +37,5 @@ fun updt(msg, model) {
 fun mainPage() {
     setCookie("currentUser", "");
     Mvu.runSimple("placeholder", initialModel, view, updt);
-    page
-        <div id = "placeholder"></div>
+    Common.template()
 }

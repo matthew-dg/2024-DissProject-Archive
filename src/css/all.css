@@ -1,3 +1,77 @@
-p {
-  display: inline;
+body {
+  margin-top: 40px;
+  margin-left: 20px; /* This margin just makes the text easier to read. You can remove it if you want since it can mess with your other styles. */
+}
+
+a {
+  display: block;
+}
+
+button {
+  margin-top: 20px;
+  display: block;
+  border-radius: 12px;
+}
+
+
+
+/* This box class is purely used for explaining how the bootstrap grid system works. */
+.header {
+  background-color: #494e5217;
+  padding: 2px;
+  overflow: hidden;
+  margin-right: 20px;
+}
+
+.header a {
+  float: left;
+  display: block;
+  color: #000000;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+
+.header a:hover {
+  background-color: #69008f75;
+  color: #ffffff;
+}
+
+.paper-form {
+  background-color: #f2f2f2;
+  padding: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+  display: block;
+}
+
+.paper-form:empty {
+  display: none;
+}
+
+.paper-form label {
+  display: block;
+  margin-top: 10px;
+}
+
+.reply {
+  background-color: #9639832e;
+  padding: 20px;
+  margin-top: 20px;
+  margin-right: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.reply:empty {
+  display: none;
+}
+
+.content {
+  background-color: #9639832e;
+  padding: 20px;
+  margin-top: 20px;
+  margin-right: 20px;
+  border: 1px solid #e0e0e0;
 }

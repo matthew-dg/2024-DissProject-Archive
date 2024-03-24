@@ -3,9 +3,10 @@ CREATE TABLE users(
     name text NOT NULL,
     email text unique NOT NULL,
     password text NOT NULL,
-    afiliation text DEFAULT NULL,
+    affiliation text DEFAULT NULL,
     pcMember BOOLEAN DEFAULT FALSE,
-    admin BOOLEAN DEFAULT FALSE
+    admin BOOLEAN DEFAULT FALSE,
+    registered BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE userPaper(
@@ -17,7 +18,7 @@ CREATE TABLE userPaper(
 
 CREATE TABLE papers(
     paperId SERIAL PRIMARY KEY,
-    title text NOT NULL,
+    title text NOT NSetULL,
     abstract text NOT NULL,
     body text NOT NULL,
     topic text NOT NULL,
@@ -26,8 +27,7 @@ CREATE TABLE papers(
 
 CREATE TABLE reviews(
     reviewId SERIAL PRIMARY KEY,
-    paperId INT NOT NULL REFERENCES papers(paperId),
-    reviewerId INT NOT NULL REFERENCES users(userId),
+    assignmentId INT NOT NULL REFERENCES reviewAssignments(assignmentId),
     rating INT CHECK (rating >= 1 AND rating <= 5) NOT NULL,
     reviewText text NOT NULL
 );
@@ -37,7 +37,15 @@ CREATE TABLE comments(
     paperId INT NOT NULL REFERENCES papers(paperId),
     comenterId INT NOT NULL REFERENCES users(userId),
     commentText text NOT NULL,
-    parentCommentId INT DEFAULT 0 REFERENCES comments(commentId)
+    parentCommentId INT DEFAULT -1 
 );
 
-INSERT INTO comments(commentId,paperId, comenterId, commentText,parentCommentId) VALUES (13,40, 1, 'This is a reply',8);
+CREATE TABLE reviewAssignments(
+    assignmentId SERIAL PRIMARY KEY,
+    paperId INT NOT NULL REFERENCES papers(paperId),
+    reviewerId INT REFERENCES users(userId),
+    completed BOOLEAN DEFAULT FALSE
+);
+
+INSERT INTO users (name, email, password, affiliation, pcMember, admin, registered) VALUES ('admin', 'admin@test.com', 'admin', 'admin', TRUE, TRUE, TRUE);
+```

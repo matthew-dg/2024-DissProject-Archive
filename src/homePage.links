@@ -1,54 +1,86 @@
-import Mvu;
-import MvuHTML;
-import MvuAttrs;
+open import Mvu;
+open import MvuHTML;
+open import MvuAttrs;
 import Common;
 
-
-typename Model = (text: String, counter: Int, dataText: String, userEmail: String);
+typename PaperInfo = (id:Int,title:String);
+typename Review = (id:Int,paperTitle:String,score:Int,paperId:Int);
+typename User = (admin:Bool,affiliation:String,email:String,name:String,pcmember:Bool,userid:Int);
+typename Assignments = (title:String, id:Int);
+typename Model = (papers:[PaperInfo], reviews:[Review], user:User, assignments:[Assignments]);
 
 typename Msg = [| UpdateText:String | IncrCounter |];
-
-sig initialModel : Model
-var initialModel = (text = "", counter = 0, dataText = "Nout", userEmail = "");
 
 #Database
 var db = database "links";
 var users = table "users" with (email : String, name : String, userid : Int, afiliation : String, pcmember : Bool, admin : Bool) from db;
+var papers = table "papers" with (title : String, paperid : Int) from db;
+var userPaperConnection = table "userpaper" with (useremail : String, paperid : Int, submissionid : Int, authororder : Int) from db;
+var reviews = table "reviews" with (paperid : Int, assignmentid : Int, rating : Int, reviewid :Int) from db;
+var reviewassignments = table "reviewassignments" with (paperid : Int, reviewerid : Int, assignmentid : Int, completed: Bool) from db;
 
 sig getInitialModel : (String) ~> Model
 fun getInitialModel(userId) server {
     var user = Common.getUserFromCookie(userId);
-    (initialModel with userEmail = (user).email)
+
+    var userPapers = query nested { 
+        for (x <-- papers)
+            for (y <-- userPaperConnection)
+                where (x.paperid == y.paperid && y.useremail == user.email)
+                    [(title = x.title, id = x.paperid)]};
+    var reviews = query nested {
+        for (x <-- reviewassignments)
+            for (y <-- reviews)
+                where (x.reviewerid == user.userid && x.assignmentid == y.assignmentid)
+                    for (z <-- papers)
+                        where (z.paperid == x.paperid)
+                            [(score = y.rating, paperId = x.paperid, id = y.reviewid, paperTitle = z.title)]};
+    
+    var assignments = query nested {
+        for (x <-- reviewassignments)
+            for (y <-- papers)
+                where (x.paperid == y.paperid && x.completed == false && x.reviewerid == user.userid)
+                    [(title = y.title, id = y.paperid)]};
+
+
+    (papers = userPapers, reviews = reviews, user = user, assignments = assignments)
 }
 
-sig view : (Model) ~> MvuHTML.HTML(Msg)
+sig view : (Model) ~> MvuHTML.HTML(())
 fun view(model) {
-    open MvuHTML;
-    open MvuAttrs;
+    var listPapers = fun(paper) {
+        a(href("/displayPaper?paperId=" ^^ intToString(paper.id)), textNode(paper.title))
+    };
+    var listReviews = fun(review) {
+        a(href("/reviews?paperId=" ^^ intToString(review.paperId)), textNode(review.paperTitle))
+    };
+    var paperList = concatMap(listPapers, model.papers);
+    var reviewList = concatMap(listReviews, model.reviews);
+    var assignmentList = concatMap(listPapers, model.assignments);
+    var assin = switch(model.assignments) {
+        case [] -> p(a0, textNode("All assignments completed!"))
+        case [x] -> p(a0, textNode("Assignments Still to complete: ")) +* div(a0, assignmentList)
+    };
 
     Common.viewHeader() +*
 
-    p(a0, textNode(model.userEmail)) +*
-    input(onInput(fun(str) { UpdateText(str) }) +@ value(model.text), h0) +*
-    p(a0, textNode(model.text)) +*
-    p(a0, textNode(show(model.counter))) +*
-    p(a0, textNode(model.dataText)) +*
-    button(onClick(fun() { IncrCounter }), textNode("Increment")) +*
-    a(href("/signup"), textNode("Sign Up")) +*
-    a(href("/login"), textNode("Log In")) +*
-    a(href("/logout"), textNode("Logout")) +*
-    a(href("/submitPaper"), textNode("Submit Paper")) +*
-    a(href("/PaperList"), textNode("Papers"))
+    p(a0, textNode(model.user.email)) +* 
+    div(class("content"),h3(a0, textNode("Papers: ")) +*
+    div(a0, paperList)) +*
+    div(class("content"),h3(a0, textNode("Reviews: ")) +*
+    div(a0, reviewList)) +*
+    assin
 }
 
-sig updt : (Msg, Model) ~> Model
-fun updt(msg, model) {
-    switch (msg) {
-        case UpdateText(txt) -> 
-            (model with text = txt)
-        case IncrCounter -> (model with counter = model.counter + 1)
-    }
-}
+
+#sig updt : (Msg, Model) ~> Model
+#fun updt(msg, model) {
+#    switch (msg) {
+#        case UpdateText(txt) -> 
+#            (model with text = txt)
+#        case IncrCounter -> (model with counter = model.counter + 1)
+#    }
+#}
 
 
 fun mainPage() {
@@ -56,13 +88,11 @@ fun mainPage() {
     
     var loggedIn = user <> "";
     if (loggedIn) {
-        ()
+        
+        var sendModel = getInitialModel(user);
+        Mvu.runStatic("placeholder", sendModel, view)
     } else {
         redirect("/login")
     };
-
-    var sendModel = getInitialModel(user);
-
-    Mvu.runSimple("placeholder", sendModel, view, updt);
     Common.template()
 }

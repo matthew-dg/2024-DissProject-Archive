@@ -14,34 +14,34 @@ var initialModel = (email = "", password = "", loginSuccess = false);
 
 #Database
 var db = database "links";
-var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+var users = table "users" with (email : String, password : String ,name : String, userid : Int, affiliation : String, pcmember : Bool, admin : Bool) from db;
 
 #placeholder till real authentication is implemented
 sig validAuth : (String, String) ~> String
 fun validAuth(email, pass) server {
-   if (email == "2571284d@student.gla.ac.uk" && pass == "Blah") {
     var curentUser = email;
     var userid = 
       query {
         for (x <-- users)
-          where (x.email == curentUser)
+          where (x.email == curentUser && x.password == pass)
             [(a=x.userid)]
       };
-    intToString(hd(userid).a)
+    if (userid == []) {
+        ""
     } else {
-      ""
-    }
-}
+      setCookie("currentUser",  intToString(hd(userid).a));
+      intToString(hd(userid).a)
+}}
 
 sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
-    
+  
+  Common.viewHeader() +*
   form(a0,
     input(type("email") +@ placeholder("Email") +@ name("email") +@ onInput(fun(str) { UpdateEmail(str) }), h0) +*
     input(type("password") +@ placeholder("Password") +@ name("password") +@ onInput(fun(str) { UpdatePassword(str) }), h0) +*
     button(onClick(fun() { TryLogin }), textNode("Log In")) 
-    ) +*
-    a(href("/signup"), textNode("Sign Up")) 
+    )
     }
 
 sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
@@ -53,7 +53,6 @@ fun updt(msg, model) {
       ((model with loginSuccess = false), cmd)
     case DeliverResult(correct) -> 
       if (correct <> "") {
-          setCookie("currentUser", correct);
           redirect("/")
       } else {
         setCookie("currentUser", "")
@@ -66,8 +65,6 @@ fun updt(msg, model) {
 
 
 fun mainPage() {
-  setCookie("currentUser", "");
-  print(getCookie("currentUser"));
     var loggedIn = getCookie("currentUser") <> "";
     if (loggedIn) {
         redirect("/")
@@ -76,6 +73,5 @@ fun mainPage() {
     };
 
     Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
-    page
-         <div id = "placeholder"></div>
+    Common.template()
 }

@@ -3,9 +3,11 @@ open import MvuHTML;
 open import MvuAttrs;
 open import MvuEvents;
 open import MvuCommands;
+import Common;
 
-typename Author = (email: String, name: String, affiliation: String, idNum: Int);
+typename User = (email: String, name: String, userid: Int, affiliation: String, pcmember: Bool, admin: Bool);
 typename Comment = (comment: String, author: [String], parentId: Int, id: Int);
+typename Assignments = (paperid: Int, reviewerid: Int, assignmentid: Int, completed: Bool);
 typename NestedComment = (parentObject: Comment , children: [Comment]);
 typename PaperInfo = (title: String,
     paperid: Int,
@@ -13,13 +15,22 @@ typename PaperInfo = (title: String,
     body: String, 
     topic: String, 
     conflicts: String, 
-    authors: [String],
+    authors: [User],
     currentComment: String,
     comments: [NestedComment],
-    currentReply: String);
+    currentReply: String,
+    assignments: [Assignments],
+    currentUser: User,
+    pcmembers: [User],
+    currentAssignee: Int
+);
 
 typename Model = Maybe(PaperInfo);
-typename Message = [| UpdateComment:String | TrySubmit:Int | DeliverResult |];
+typename Message = [| UpdateComment:String | TrySubmit:Int | DeliverResult | UpdateAssignee:String | SubmitAssignment | DeletePaper |];
+
+fun required() {
+  attr("required", "")
+}
 
 #Database
 
@@ -28,12 +39,32 @@ var papers = table "papers" with (title : String, paperid : Int, abstract : Stri
 #Notice that table names must be lowercase, and column names must be lowercase
 var userPaperConnection = table "userpaper" with (useremail : String, paperid : Int, submissionId : Int, authorOrder : Int) from db;
 var comments = table "comments" with (paperid : Int, comenterid: Int, commenttext : String, parentcommentid: Int, commentid: Int) where commentid readonly from db;
-var users = table "users" with (email : String, name : String, affiliation : String, userid : Int) from db;
+var users = table "users" with (email : String, name : String, affiliation : String, userid : Int, pcmember : Bool, admin : Bool) from db;
+var assignments = table "reviewassignments" with (paperid : Int, reviewerid : Int, assignmentid : Int, completed : Bool) where assignmentid readonly from db;
 
 sig insertComment : (Int, String, Int) ~> ()
 fun insertComment(givenPaperId,enteredComment,parent) server {
   var curentUser = getCookie("currentUser");
   insert comments values (paperid, comenterid, commenttext, parentcommentid) [(paperid = givenPaperId, comenterid = stringToInt(curentUser), commenttext = enteredComment, parentcommentid = parent)]
+}
+
+sig insertAssignment : (Int, Int, [Assignments]) ~> ()
+fun insertAssignment(paperid, reviewerid, curAssignments) server {
+  var check = for (a <- curAssignments) 
+    where (a.reviewerid == reviewerid && a.paperid == paperid)
+      [a];
+  switch(check) {
+    case [] -> insert assignments values (paperid, reviewerid, completed) [(paperid = paperid, reviewerid = reviewerid, completed = false)]
+    case _ -> print("Reviewer already assigned to paper")
+  }
+}
+
+sig deletePaper : (Int) ~> ()
+fun deletePaper(paperid) server {
+  delete (x <-- comments) where (x.paperid == paperid);
+  delete (x <-- userPaperConnection) where (x.paperid == paperid);
+  delete (x <-- assignments) where (x.paperid == paperid);
+  delete (x <-- papers) where (x.paperid == paperid)
 }
 
 sig getModel : (Int) ~%~> Model
@@ -51,8 +82,13 @@ fun getModel(paperid) {
           g =
             for (y <-- userPaperConnection)
               where (y.paperid == paperid)
-                [y.useremail])] 
+                for (z <-- users)
+                  where (z.email == y.useremail)
+                    [(email=z.email, name=z.name, userid=z.userid, affiliation=z.affiliation, pcmember=z.pcmember, admin=z.admin
+                )])] 
     };
+
+
   var rawComments = 
     query nested {
       for (x <-- comments)
@@ -65,15 +101,35 @@ fun getModel(paperid) {
     };
 
   var nestedComments = 
-    for (c <- rawComments) where (c.parentId == 0)
+    for (c <- rawComments) where (c.parentId == -1)
       [(parentObject = c, children =
         for (d <- rawComments) where (d.parentId == c.id) 
           [d]
       )];
 
+  var curentUser = Common.getUserFromCookie(getCookie("currentUser"));
+
+  var assignments =
+    query {
+      for (x <-- assignments)
+        where (x.paperid == paperid)
+          [x]
+    };
+
+    var pcmembers =
+    query {
+      for (x <-- users)
+        where (x.pcmember == true)
+          [x]
+    };
+
   switch(maybe) {
     case [] -> Nothing
-    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, body = x.d, topic = x.e, conflicts = x.f, authors = x.g, currentComment = "", comments = nestedComments, currentReply = ""))
+    case [x] -> Just((title = x.a, paperid = x.b, abstract = x.c, 
+    body = x.d, topic = x.e, conflicts = x.f, 
+    authors = x.g, currentComment = "", comments = nestedComments, 
+    currentReply = "",assignments = assignments, currentUser = curentUser, 
+    pcmembers = pcmembers, currentAssignee = hd(pcmembers).userid))
   }
 }
 
@@ -91,47 +147,95 @@ fun getInitialModel() {
   }
 }
 
+sig viewModel : (PaperInfo) ~> HTML(Message)
 fun viewModel(model) {
   var makerow = fun((author)) {
-     p(a0, textNode("Email: " ^^ author))
+     p(a0, textNode("Email: " ^^ author.email)) +*
+     p(a0, textNode("Name: " ^^ author.name))
   };
   var authorlist = MvuHTML.concatMap(makerow, model.authors);
   
 #typename NestedComment = (parentObject: Comment , children: [Comment]);
   var makeSingleComment = fun((comment)) {
-    print(comment.comment);
       p(a0, textNode(hd(comment.author) ^^ " : " ^^ comment.comment))
     };
 
   var makeComment = fun((nestedComment)) {
     var parent = makeSingleComment(nestedComment.parentObject);
     var childlist = MvuHTML.concatMap(makeSingleComment, nestedComment.children);
-    p(a0, parent) +*
+    parent +*
     form(a0,
       input(type("text") +@ placeholder("Reply") +@ name("reply") +@ onInput(fun(str) { UpdateComment(str) }), h0) +*
       button(onClick(fun() { TrySubmit(nestedComment.parentObject.id) }), textNode("Reply"))) +*
-    p(a0, childlist) +* br(a0, h0)
+    div(class("reply"), childlist) +* br(a0, h0)
   };
-  
+
+  var hasAssignment = fun() {
+    switch(model.assignments) {
+      case [x] -> 
+        if (x.completed) {
+          p(a0, textNode("You have completed a review but may submit another")) +* 
+          a(href("/reviews?paperId=" ^^ intToString(model.paperid)), textNode("Review"))
+        } else {
+          p(a0, textNode("You have been assigned to review this paper.")) +*
+          a(href("/reviews?paperId=" ^^ intToString(model.paperid)), textNode("Review"))
+        }
+      case [] -> p(a0, textNode("You have not been assigned to review this paper."))
+      case _ -> 
+        p(a0, textNode("You have been assigned to review this paper multiple times, this should never happen")) +*
+        a(href("/reviews?paperId=" ^^ intToString(model.paperid)), textNode("Review"))
+    }
+  };
+
+  var userOption = fun(user) {
+    option(value(intToString(user.userid)), textNode(user.name))
+  };
+
+  var canAssign = fun(user) {
+        if (user.admin) {
+          p(a0, textNode("You are an admin you may assign reviewers")) +*
+           form(a0,
+            select_(onChange(fun(int) { UpdateAssignee(int) }), concatMap(userOption, model.pcmembers)) +*
+            button(onClick(fun() { SubmitAssignment }), textNode("Assign")) 
+          )
+        } else {
+          h0
+        }
+  };
+
+  var canDelete = fun() {
+    if (model.currentUser.admin) {
+      form(a0,
+        button(onClick(fun() { DeletePaper }), textNode("Delete Paper"))
+      )
+    } else {
+      h0
+    }
+  };
+
   var commentlist = MvuHTML.concatMap(makeComment, model.comments);
-  a(href("/reviews?paperId=" ^^ intToString(model.paperid)), textNode("Review")) +* 
-  a(href("/PaperList"), textNode("Papers")) +*
+  Common.viewHeader() +*
+  canAssign(model.currentUser) +*
+  div(class("content"),
   p(a0, textNode("Title: " ^^ model.title)) +*
   p(a0, textNode("Abstract: " ^^ model.abstract)) +*
   p(a0, textNode("Body: " ^^ model.body)) +*
   p(a0, textNode("Topic: " ^^ model.topic)) +*
-  p(a0, textNode("Conflicts: " ^^ model.conflicts)) +*
-  p(a0, authorlist) +*
+  p(a0, textNode("Conflicts: " ^^ model.conflicts))) +*
+  div(class("content"), 
+    h1(a0, textNode("Authors")) +*
+    p(a0, authorlist)) +*
+  div(class("content"), hasAssignment()) +*
   h1(a0, textNode("Comments")) +*
-  p(a0, commentlist) +*
+  p(a0, commentlist) +* 
+
   form(a0,
-    input(type("text") +@ placeholder("Comment") +@ name("comment") +@ onInput(fun(str) { UpdateComment(str) }), h0) +*
-    button(onClick(fun() { TrySubmit(0) }), textNode("Submit"))
+    input(type("text") +@ placeholder("Comment") +@ name("comment") +@ required() +@ onInput(fun(str) { UpdateComment(str) }), h0) +*
+    button(onClick(fun() { TrySubmit(-1) }), textNode("Submit"))
     ) +*
-  button(onClick(fun() { TrySubmit(0) }), textNode("Submit"))  
+  canDelete()
 }
 
-#sig view : Maybe(Model) ~> MvuHTML.HTML(_)
 fun view(model) { 
   switch(model) {
     case Just(model) -> viewModel(model)
@@ -143,11 +247,16 @@ sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
 fun updt(msg, model) {
   fun updtModel(model) {
     switch(msg) {
-      case UpdateComment(txt) -> ((model with currentComment = txt), MvuCommands.empty)
+      case UpdateComment(txt) -> 
+        ((model with currentComment = txt), MvuCommands.empty)
       case TrySubmit(id) -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(insertComment(model.paperid, model.currentComment, id)) }))
       case DeliverResult -> 
         redirect("/displayPaper?paperId=" ^^ intToString(model.paperid));
         (model, MvuCommands.empty)
+      case UpdateAssignee(id) -> 
+      ((model with currentAssignee = stringToInt(id)), MvuCommands.empty)
+      case SubmitAssignment -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(insertAssignment(model.paperid, model.currentAssignee, model.assignments)) }))
+      case DeletePaper -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(deletePaper(model.paperid)) }))
     }
   }
   switch(model) {
@@ -160,16 +269,5 @@ fun updt(msg, model) {
 
 fun mainPage() {
     Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty);
-    page
-
-<html>
-
-<body>
-
-<div id="placeholder"></div>
-
-</body>
-
-</html>
-
+    Common.template()
 }

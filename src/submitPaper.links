@@ -3,6 +3,7 @@ open import MvuHTML;
 open import MvuAttrs;
 open import MvuEvents;
 open import MvuCommands;
+import Common;
 
 #Model and Message definitions
 typename Author = (email: String, name: String, affiliation: String, idNum: Int);
@@ -20,8 +21,11 @@ typename Model = (title: String,
 
 typename User = (email: String, name: String, affiliation: String);
 
-sig initialModel : Model
-var initialModel = (title = "", 
+sig getInitialModel : () ~%~> Model
+fun getInitialModel() {
+    var currentUser = Common.getUserFromCookie(getCookie("currentUser"));
+
+    (title = "", 
     abstract = "", 
     body = "",  
     topic = "", 
@@ -29,9 +33,10 @@ var initialModel = (title = "",
     submit = false , 
     authors = [],
     currentAuthor = 0,
-    currentAuthorName = "",
-    currentAuthorEmail = "",
-    currentAuthorAffiliation = "");
+    currentAuthorName = currentUser.name,
+    currentAuthorEmail = currentUser.email,
+    currentAuthorAffiliation = currentUser.affiliation)
+}
 
 typename Message = 
     [| UpdateTitle:String 
@@ -110,6 +115,7 @@ var papers = table "papers" with (title : String,
   paperid : Int) where paperid readonly from db;  
 var userPaper = table "userPaper" with (useremail : String, paperid : Int, authororder: Int) from db;
 var users = table "users" with (email : String, name : String, password : String, id: Int) from db;
+var assignments = table "reviewassignments" with (paperid: Int ,completed: Bool) from db;
 
 
 sig insertPaper : (String, String, String, String, String, [Author]) ~> ()
@@ -117,9 +123,11 @@ fun insertPaper(enteredTitle,enteredAbstract,enteredBody, enteredTopic, enteredC
   var curentPaperId = insert papers values (title, abstract, body,topic,conflicts) [(title = enteredTitle, abstract = enteredAbstract, body = enteredBody, topic = enteredTopic, conflicts = enteredConflicts)] returning paperid;
   var orderCounter = 0;
   var submisionInfo = for(a <- enteredAuthors) {
+    #orderCounter = orderCounter + 1;
     [(useremail = a.email, paperid = curentPaperId, authororder = orderCounter)]
   };
   insert userPaper values (useremail, authororder, paperid) submisionInfo
+  #insert assignments values (paperid, completed) [(paperid = curentPaperId, completed = false)]
 }
 
 
@@ -211,24 +219,26 @@ fun viewAuthors(authors) {
 
 sig viewPaperInput : (Model) ~> HTML(Message)
 fun viewPaperInput(model) {
-      form(a0,
-        input(type("text") +@ placeholder("Title") +@ name("title") +@ onKeyUp(fun(str) { UpdateTitle(str) }), h0) +*
-        input(type("text") +@ placeholder("Abstract") +@ name("abstract") +@ onKeyUp(fun(str) { UpdateAbstract(str) }), h0) +*
-        input(type("textarea") +@ placeholder("Body") +@ name("body") +@ onKeyUp(fun(str) { UpdateBody(str) }), h0) +*
-        input(type("text") +@ placeholder("Topic") +@ name("topic") +@ onKeyUp(fun(str) { UpdateTopic(str) }), h0) +*
-        input(type("text") +@ placeholder("Conflicts") +@ name("conflicts") +@ onKeyUp(fun(str) { UpdateConflicts(str) }), h0) +*
+      form(class("paper-form"),
+        label(for_("title"), textNode("Title: ")) +*
+        input(type("text") +@ placeholder("Title") +@ id("title") +@ onKeyUp(fun(str) { UpdateTitle(str) }), h0) +*
+        label(for_("abstract"), textNode("Abstract: ")) +*
+        input(type("text") +@ placeholder("Abstract") +@ id("abstract") +@ onKeyUp(fun(str) { UpdateAbstract(str) }), h0) +*
+        label(for_("body"), textNode("Body: ")) +*
+        textarea(placeholder("Body") +@ id("body") +@ onKeyUp(fun(str) { UpdateBody(str) }), h0) +*
+        label(for_("topic"), textNode("Topic: ")) +*
+        input(type("text") +@ placeholder("Topic") +@ id("topic") +@ onKeyUp(fun(str) { UpdateTopic(str) }), h0) +*
+        label(for_("conflicts"), textNode("Conflicts: ")) +*
+        input(type("text") +@ placeholder("Conflicts") +@ id("conflicts") +@ onKeyUp(fun(str) { UpdateConflicts(str) }), h0) +*
         button(onClick(fun() { TrySubmit }), textNode("Submit"))
-        ) +*
-
-    
-
-    a(href("/"), textNode("Home"))
+        ) 
 }
 
 
 sig view : (Model) ~> MvuHTML.HTML(Message)
 fun view(model) {
- div (class ("todomvc-wrapper"),
+  Common.viewHeader() +*
+  div (class ("todomvc-wrapper"),
     section (class ("todoapp"), ch([
       viewPaperInput(model),
       viewNewAuthorInput(model),
@@ -247,7 +257,9 @@ fun updt(msg, model) {
     case AddAuthor -> 
       ((model with currentAuthor = model.currentAuthor + 1, currentAuthorName = "", 
       currentAuthorEmail = "", currentAuthorAffiliation = "", authors = getAddedAuthor(model)), MvuCommands.empty)
-    case DeliverResult -> ((model with submit = true), MvuCommands.empty)
+    case DeliverResult -> 
+      redirect("/submitPaper");
+      ((model with submit = true), MvuCommands.empty)
     case UpdateTitle(txt) -> ((model with title = txt), MvuCommands.empty)
     case UpdateAbstract(txt) -> ((model with abstract = txt), MvuCommands.empty)
     case UpdateBody(txt) -> ((model with body = txt), MvuCommands.empty)
@@ -303,7 +315,6 @@ fun mainPage() {
         redirect("/")
     };
 
-  Mvu.runCmd("placeholder", initialModel, view, updt, MvuCommands.empty);
-    page
-        <div id = "placeholder"></div>
+  Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty);
+  Common.template()
 }

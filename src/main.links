@@ -10,6 +10,8 @@ import PaperList;
 import PapersDisplay;
 import SubmitReview;
 import ReviewsDisplay;
+import Admin;
+import HelloWorld;
 
 fun main() {
 
@@ -23,6 +25,9 @@ fun main() {
     addRoute("/submitReview", fun(_) { SubmitReview.mainPage() });
     addRoute("/home", fun(_) { HomePage.mainPage() });
     addRoute("/reviews", fun(_) { ReviewsDisplay.mainPage() });
+    addRoute("/admin", fun(_) { Admin.mainPage() });
+    addRoute("/helloWorld", fun(_) { HelloWorld.mainPage() });
+    addStaticRoute("/css", "css", [("css", "text/css")]);
     servePages()
 }
 
