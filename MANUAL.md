@@ -1,0 +1,1 @@
+ConferenceLinker is a conference management system built in links, upon initialising the database using psql and the provided sql file a user with the user name admin and password admin will be created, from there the user can set up the system how they would like.
