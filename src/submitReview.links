@@ -78,7 +78,7 @@ fun viewModel(model) {
     textarea(placeholder("Review Text") +@ name("Review Text") +@id("Review") +@ onInput(fun(str) { UpdateReviewText(str) }), h0) +*
     label(for_("rating"), textNode("Rating")) +*
     input(type("text") +@ placeholder("Rating") +@ name("Rating") +@ onInput(fun(str) { UpdateScore(str) }), h0) +*
-    button(onClick(fun() { TrySubmit }), textNode("Sign Up"))
+    button(onClick(fun() { TrySubmit }), textNode("Submit"))
     )
 }
 

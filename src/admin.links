@@ -5,10 +5,10 @@ import Common;
 
 typename User = (email : String, name : String, userid : Int, affiliation : String, pcmember : Bool, admin : Bool);
 typename Assignments = (paperId: Int, reviewerId: Int, reviewId: Int, completed: Bool);
-typename ModelInfo = (curentUser: User, users: [User]);
+typename ModelInfo = (currentUser: User, users: [User], currentPC: Int, currentAdmin: Int);
 typename Model = Maybe(ModelInfo);
 
-typename Msg = [|GenerateAllocations|];
+typename Message = [| UpdatePC:String | UpdateAdmin:String | SubmitPC | SubmitAdmin | DeliverResult | TakeAdmin | TakePC |];
 
 #Database
 var db = database "links";
@@ -19,48 +19,68 @@ var userPaperConnection = table "userpaper" with (useremail : String, paperid : 
 var reviews = table "reviews" with (paperid : Int, reviewerid : Int, rating : Int, reviewid :Int) from db;
 
 
+sig updateAdmin : (Int) ~> ()
+fun updateAdmin(int) server {
+    update (x <-- users) 
+        where (x.userid == int)
+            set(email=x.email, name=x.name, userid=x.userid, affiliation=x.affiliation, pcmember=x.pcmember, admin=true)
+}
+
+sig updatePC : (Int) ~> ()
+fun updatePC(int) server {
+    update (x <-- users) 
+        where (x.userid == int)
+            set(email=x.email, name=x.name, userid=x.userid, affiliation=x.affiliation, pcmember=true, admin=x.admin)
+}
+
+sig removeAdmin : (Int) ~> ()
+fun removeAdmin(int) server {
+    update (x <-- users)
+        where (x.userid == int)
+            set(email=x.email, name=x.name, userid=x.userid, affiliation=x.affiliation, pcmember=x.pcmember, admin=false)
+}
+
+sig removePC : (Int) ~> ()
+fun removePC(int) server {
+    update (x <-- users)
+        where (x.userid == int)
+            set(email=x.email, name=x.name, userid=x.userid, affiliation=x.affiliation, pcmember=false, admin=x.admin)
+}
+
+
+
+
 sig getInitialModel : () ~%~> Model
 fun getInitialModel() {
-  var curentUser = Common.getUserFromCookie(getCookie("currentUser"));
+  var currentUser = Common.getUserFromCookie(getCookie("currentUser"));
   var allUsers = query { for (x <-- users) [(email=x.email, name=x.name, userid=x.userid, affiliation=x.affiliation, pcmember=x.pcmember, admin=x.admin)] };
-  if (curentUser.admin || curentUser.pcmember) {
-    Just((curentUser = curentUser, users = allUsers))
+  if (currentUser.admin || currentUser.pcmember) {
+    Just((currentUser = currentUser, users = allUsers, currentPC = hd(allUsers).userid, currentAdmin = hd(allUsers).userid))
   } else {
     Nothing
   }
 }
 
-sig viewModel : (ModelInfo) ~> MvuHTML.HTML(())
+sig viewModel : (ModelInfo) ~> MvuHTML.HTML(Message)
 fun viewModel(model) {
-    var listUser = fun(user) {
-        div(a0,
-            p(a0,textNode(user.email)) +*
-            p(a0,textNode(user.name)) +*
-            p(a0,textNode(user.affiliation)) +*
-            p(a0,
-                if (user.userid == model.curentUser.userid) {
-                    textNode("You")
-                } else {
-                    a(href("/assignReview/" ^^ intToString(user.userid)), textNode("Assign Review"))
-                }
-            )
-        )
-    };
-
     var userOption = fun(user) {
         option(value(intToString(user.userid)), textNode(user.name))
     };
 
-    var users = concatMap(listUser, model.users);
-    var userOptions = concatMap(userOption, model.users);
-    var listAttr = fun(val) {
-        attr("list", val)
-    };
     Common.viewHeader() +*
-    users +* 
-    form(a0,
-        select_(a0, userOptions)) +*
-    p(a0, textNode("You are logged in as " ^^ model.curentUser.name))
+    h2(a0,textNode("Admin Page")) +*
+    h3(a0,textNode("Change PC status")) +*
+    form(class("content"),
+            select_(onChange(fun(int) { UpdatePC(int) }), concatMap(userOption, model.users)) +*
+            button(onClick(fun() { SubmitPC }), textNode("Give PC User")) +*
+            button(onClick(fun() { TakePC }), textNode("Remove PC User"))
+    ) +*
+    h3(a0,textNode("Change Admin status")) +*
+    form(class("content"),
+            select_(onChange(fun(int) { UpdateAdmin(int) }), concatMap(userOption, model.users)) +*
+            button(onClick(fun() { SubmitAdmin }), textNode("Give Admin User")) +*
+            button(onClick(fun() { TakeAdmin }), textNode("Remove Admin User"))
+    )
 }
 
 fun view(model) {
@@ -70,14 +90,34 @@ fun view(model) {
     }
 }
 
+sig updt : (Message, Model) ~%~> (Model, MvuCommands.Command(Message))
+fun updt(msg, model) {
+    fun updateModel(model) { 
+        switch(msg) {
+            case UpdatePC(int) -> ((model with currentPC = stringToInt(int)), MvuCommands.empty)
+            case UpdateAdmin(int) -> ((model with currentAdmin = stringToInt(int)), MvuCommands.empty)
+            case SubmitPC -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(updatePC(model.currentPC)) }))
+            case SubmitAdmin -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(updateAdmin(model.currentAdmin)) }))
+            case TakePC -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(removePC(model.currentPC)) }))
+            case TakeAdmin -> ((model), MvuCommands.spawnProc(fun() { DeliverResult(removeAdmin(model.currentAdmin)) }))
+            case DeliverResult -> ((model), MvuCommands.empty)}
+    }
+    
+    switch(model) {
+        case Just(model) -> 
+            var (updatedModel, cmds) = updateModel(model);
+            (Just(updatedModel), cmds)
+        case Nothing -> (Nothing, MvuCommands.empty)
+    }
+}
+
 fun mainPage() {
     var user = getCookie("currentUser");
     
     var loggedIn = user <> "";
     if (loggedIn) {
-        Mvu.runStatic("placeholder", getInitialModel(), view)
+         Mvu.runCmd("placeholder", getInitialModel(), view, updt, MvuCommands.empty)
     } else {
-        print("User is not logged in");
         redirect("/login")
     };
     Common.template()

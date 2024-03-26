@@ -64,7 +64,7 @@ fun viewModel(model) {
   Common.viewHeader() +*
   a(href("/submitReview?paperId=" ^^ intToString(model.paperId)), textNode("Submit Review")) +*
   h1(a0,textNode("Reviews for " ^^ model.paperTitle)) +*
-  div(a0,reviewList)
+  div(class("content"),reviewList)
 }
 
 fun view(model) { 

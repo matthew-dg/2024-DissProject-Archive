@@ -56,6 +56,13 @@ button {
   margin-top: 10px;
 }
 
+.paper-form textarea {
+  width: 50%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 .reply {
   background-color: #9639832e;
   padding: 20px;

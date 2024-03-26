@@ -354,7 +354,12 @@ Supervisor Name: Simon Fowler
 * *2 hours* began work on the evaluation section
 
 ### 23 March 2024
- * *2 hours* more work on the evaluation section, missed the deadline cuase of the laptop breaking, which is always great
+* *2 hours* more work on the evaluation section, missed the deadline cuase of the laptop breaking, which is always great
+* *0.5 hours* meeting with supervisor
 
 ### 24 March 2024
 * *12 hours* finished all the sections, its done 
+
+### 26 March 2024
+* *2 hours* fixed some issues in the code
+* *2 hours* fixed presentation so its not awful
